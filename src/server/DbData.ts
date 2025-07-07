@@ -62,16 +62,25 @@ export class DbData {
     // never delete a post/thread
     // automatically create month entry
 
+    /**
+     * AND
+     */
     searchThreads = (searchQuery: type_search_query) => {
+        const t0 = performance.now();
         const result: Record<string, type_thread> = {};
         const tStart = searchQuery["timeRange"][0];
         const tEnd = searchQuery["timeRange"][1];
         let matchCount = 0;
+        // each search should not have more than 100 results
+        if (searchQuery["count"] > 100) {
+            searchQuery["count"] = 100;
+        }
 
         // go over all months
         for (const [monthStr, month] of Object.entries(this.getDb())) {
             const [monthStartTime, monthEndTime] = this.getMonthTimeRange(monthStr);
             // this month is out of time range
+            // console.log(monthStartTime, tStart, tEnd, monthStr)
             if (monthStartTime > tEnd || monthEndTime < tStart) {
                 continue;
             }
@@ -94,38 +103,42 @@ export class DbData {
                         timeMatched = true;
                     }
 
-                    // match author
+                    // match author, OR
                     if (searchQuery["authors"].length === 0) {
                         authorsMatched = true;
                     } else if (searchQuery["authors"].includes(postAuthor)) {
                         authorsMatched = true;
                     }
 
-                    // match topics
+                    // match topics, AND
                     if (searchQuery["topics"].length === 0) {
                         topicsMatched = true;
                     } else {
-                        for (const postTopic of postTopics) {
-                            if (searchQuery["topics"].includes(postTopic)) {
-                                topicsMatched = true;
+                        topicsMatched = true;
+                        for (const topic of searchQuery["topics"]) {
+                            if (!postTopics.includes(topic as any)) {
+                                topicsMatched = false;
                                 break;
                             }
                         }
                     }
 
-                    // match keywords
+                    // match keywords, AND
                     if (searchQuery["keywords"].length === 0) {
                         keywordsMatched = true;
                     } else {
-
+                        keywordsMatched = true;
                         for (const keyword of searchQuery["keywords"]) {
-                            if (postTitle.includes(keyword) || postText.includes(keyword)) {
-                                keywordsMatched = true;
+                            if (!postTitle.includes(keyword) && !postText.includes(keyword)) {
+                                keywordsMatched = false;
                                 break;
                             }
                         }
                     }
 
+                    // console.log(timeMatched, authorsMatched, keywordsMatched, topicsMatched)
+
+                    // this Post matches, no need to further search
                     if (timeMatched && authorsMatched && keywordsMatched && topicsMatched) {
                         threadMatched = true;
                         break;
@@ -134,7 +147,8 @@ export class DbData {
                 }
 
                 if (threadMatched) {
-                    if (matchCount > searchQuery["startingCount"] && matchCount < searchQuery["startingCount"] + searchQuery["count"]) {
+                    // console.log("aaa", matchCount)
+                    if (matchCount >= searchQuery["startingCount"] && matchCount < searchQuery["startingCount"] + searchQuery["count"]) {
                         result[threadId] = thread;
                     }
                     matchCount++;
@@ -144,6 +158,10 @@ export class DbData {
                 }
             }
         }
+        const t1 = performance.now();
+        // print search summary
+        console.log("Search query:", JSON.stringify(searchQuery, null, 4));
+        console.log("Found", Object.keys(result).length, "result,", "takes", Math.round(t1 - t0), "ms");
         return result;
     }
 
@@ -152,23 +170,6 @@ export class DbData {
         const [year, month] = monthStr.split('-').map(Number);
         const end = new Date(Date.UTC(year, month, 1) - 1).getTime();
         return [start, end];
-    }
-
-
-    getThreadsForTimeRange = (tStart: number, tEnd: number) => {
-        const result: Record<string, type_thread> = {};
-        for (const [, month] of Object.entries(this.getDb())) {
-            for (const [threadId, thread] of Object.entries(month)) {
-                const mainPost = thread[0];
-                if (mainPost !== undefined) {
-                    const mainPostTime = mainPost["time"];
-                    if (mainPostTime >= tStart && mainPostTime <= tEnd) {
-                        result[threadId] = thread;
-                    }
-                }
-            }
-        }
-        return result;
     }
 
     addThread = (newPost: type_post) => {
@@ -184,6 +185,7 @@ export class DbData {
         const newThread: type_thread = [newPost];
         const newThreadId = uuid();
         month[newThreadId] = newThread;
+        return newThreadId;
     }
 
     addFollowUpPost = (newFollowUpPost: type_post, threadId: string) => {
@@ -197,7 +199,7 @@ export class DbData {
     }
 
 
-    addNewMonth = (newMonthStr: string) => {
+    private addNewMonth = (newMonthStr: string) => {
         const newMonth: type_month = {};
         this.getDb()[newMonthStr] = newMonth;
         return newMonth;
@@ -205,7 +207,7 @@ export class DbData {
 
     saveDb = () => {
         try {
-            fs.writeFileSync(this.getDbFilePath(), JSON.stringify(this.getDb()));
+            fs.writeFileSync(this.getDbFilePath(), JSON.stringify(this.getDb(), null, 4));
         } catch (e) {
             console.log("[Error] Failed to write database file to", this.getDb());
         }
