@@ -7,6 +7,7 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css'; // import default styles
 import '../server/resources/Calendar.css'; // import default styles
 import { Value } from "react-calendar/dist/shared/types";
+import { nanoid } from 'nanoid';
 
 export class SearchBar {
     private _app: App;
@@ -92,6 +93,8 @@ export class SearchBar {
 
     _ElementSearchButton = () => {
 
+        const navigate = useNavigate();
+
         const elementRef = React.useRef<any>(null);
         return (
             <div
@@ -159,14 +162,8 @@ export class SearchBar {
                     )
                     const data = await response.json();
                     this.getApp().setThreadsData(data.result);
-                    this.getApp().threadsArea = "threads";
-                    this.getApp().updateThreads({});
-
-                    // manually change URL
                     const url = `/search?${new URLSearchParams(searchQueryStr)}`;
-                    window.history.pushState({}, '', url);
-
-                    console.log(data)
+                    navigate(url, { state: nanoid() });
                 }}
             >
                 &#128269;
@@ -317,11 +314,10 @@ export class SearchBar {
                         if (isStartTime) {
                             this.timeRange[0] = 0;
                         } else {
-                            this.timeRange[0] = 3751917376000;
+                            this.timeRange[1] = 3751917376000;
                         }
                         setShowCalendar(false);
 
-                        // forceUpdate({})
                     }}
                     style={{
                         display: "inline-flex",

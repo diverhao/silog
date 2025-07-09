@@ -3,6 +3,17 @@ import ReactDOM from 'react-dom/client';
 // import { Outlet, Link } from 'react-router-dom';
 // import { BrowserRouter, Routes, Route, useSearchParams } from 'react-router-dom';
 import { SearchBar } from './SearchBar';
+import {
+    BrowserRouter,
+    Routes,
+    Route,
+    Link,
+    Outlet,
+    useNavigate,
+    useLocation,
+    Navigate,
+} from 'react-router-dom';
+import { nanoid } from 'nanoid';
 
 
 export type type_search_query = {
@@ -46,39 +57,44 @@ export type type_threads = Record<string, type_thread>;
 
 export class App {
 
-    // keywordsStr = "";
-    // authorsStr = "";
     topicsStr = "";
     _threadsData: type_threads = {};
     _threadData: type_thread | undefined = undefined;
     _searchBar: SearchBar;
-    updateThreads = (input: any) => { };
+
     constructor() {
         this._searchBar = new SearchBar(this);
-
-        window.addEventListener('popstate', (event) => {
-            window.location.href = window.location.pathname + window.location.search;
-        })
     }
+
 
     _Element = () => {
+
         return (
-            <div style={{ marginTop: 0 }}>
-                <this._ElementTopBar></this._ElementTopBar>
-                <this._ElementThreads></this._ElementThreads>
-            </div>
+
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/" element={<this.Layout />}>
+                        {/* <Route index element={<div> Home</div>} />  */}
+                        {/* <Route index element={<Navigate to="/search?timeRange=0+3751917376000"></Navigate>} />  */}
+                        <Route index element={<this._ElementThreadsWrapper></this._ElementThreadsWrapper>}></Route>
+                        <Route path="search" element={<this._ElementThreadsWrapper></this._ElementThreadsWrapper>}></Route>
+                        <Route path="thread" element={<this._ElementThread></this._ElementThread>}></Route>
+                    </Route>
+                </Routes>
+            </BrowserRouter>
         );
     }
-
-    // router independent
-    // search bar
-    _ElementTopBar = () => {
+    
+    Layout = () => {
+        const navigate = useNavigate();
         React.useEffect(() => {
+
             const searchQuery: Record<string, any> = {};
             searchQuery["timeRange"] = [0, 3751917376000];
 
 
             if (window.location.pathname === "/thread") {
+                // "/thread" route
                 const params = new URLSearchParams(window.location.search);
 
                 const threadId = params.get('id');
@@ -98,16 +114,12 @@ export class App {
                             return res.json()
                         }
                     ).then(data => {
-                        this.threadsArea = "thread";
-                        this._threadData = data.result;
-
-                        this.updateThreads({});
-
-                        // manually change URL
+                        this.setThreadData(data.result);
                         const url = `/thread?${new URLSearchParams({ id: threadId })}`;
-                        window.history.pushState({}, '', url);
+                        navigate(url, { state: nanoid() });
                     })
             } else {
+                // "/search" or "/"
                 if (window.location.pathname === "/search") {
                     const params = new URLSearchParams(window.location.search);
 
@@ -147,19 +159,38 @@ export class App {
                             return res.json()
                         }
                     ).then(data => {
-                        this.threadsArea = "threads";
-                        const fullSearchQuery = data.query;
-                        console.log(fullSearchQuery)
-                        this.getSearchBar().keywords = fullSearchQuery["keywords"];
-                        this.getSearchBar().timeRange = fullSearchQuery["timeRange"];
-                        this.getSearchBar().authors = fullSearchQuery["authors"];
-                        this.getSearchBar().forceUpdate({});
 
                         this.setThreadsData(data.result);
-                        this.updateThreads({});
+
+                        const searchQueryStr: Record<string, any> = {
+                            timeRange: searchQuery["timeRange"].join(" ").trim(),
+                        }
+                        if (searchQuery["authors"] !== undefined && searchQuery["authors"].length > 0) {
+                            searchQueryStr["authors"] = searchQuery["authors"].join(" ").trim();
+                        }
+                        if (searchQuery["keywords"] !== undefined && searchQuery["keywords"].length > 0) {
+                            searchQueryStr["keywords"] = searchQuery["keywords"].join(" ").trim();
+                        }
+                        if (window.location.pathname === "/search") {
+                            const url = `/search?${new URLSearchParams(searchQueryStr)}`;
+                            navigate(url, { state: nanoid() })
+                        } else {
+                            navigate("/", { state: nanoid() })
+                        }
                     })
             }
         }, [])
+
+        return (
+            <div>
+                <this._ElementTopBar></this._ElementTopBar>
+                <Outlet />
+            </div>
+        );
+    }
+
+    _ElementTopBar = () => {
+        const navigate = useNavigate();
 
         return (
             <div style={{
@@ -180,7 +211,46 @@ export class App {
                         cursor: "pointer",
                     }}
                         onMouseDown={() => {
-                            window.location.href = "/";
+
+                            const searchQuery: Record<string, any> = {};
+                            // searchQuery["timeRange"] = [0, 3751917376000];
+                            searchQuery["timeRange"] = this.getSearchBar().timeRange;
+
+                            if (this.getSearchBar().keywords.length > 0) {
+                                searchQuery["keywords"] = this.getSearchBar().keywords;
+                            }
+
+
+                            if (this.getSearchBar().authors.length > 0) {
+                                searchQuery["authors"] = this.getSearchBar().authors;
+                            }
+
+                            fetch("/search", {
+                                method: "POST",
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(searchQuery),
+                            })
+                                .then(
+                                    (res) => {
+                                        return res.json()
+                                    }
+                                ).then(data => {
+
+                                    this.setThreadsData(data.result);
+
+                                    const searchQueryStr: Record<string, any> = {
+                                        timeRange: searchQuery["timeRange"].join(" ").trim(),
+                                    }
+                                    if (searchQuery["authors"] !== undefined && searchQuery["authors"].length > 0) {
+                                        searchQueryStr["authors"] = searchQuery["authors"].join(" ").trim();
+                                    }
+                                    if (searchQuery["keywords"] !== undefined && searchQuery["keywords"].length > 0) {
+                                        searchQueryStr["keywords"] = searchQuery["keywords"].join(" ").trim();
+                                    }
+                                    navigate("/", { state: nanoid() })
+                                })
                         }}
                     ></img>
                     {this.getSearchBar().getElement()}
@@ -199,77 +269,22 @@ export class App {
         )
     }
 
-    _ElementContent = ({ Children }: any) => {
-        return (
-            <div>
-                {Children}
-            </div>
-        )
-    }
+    _ElementThreadThumbnail = ({ threadId, threadData }: { threadId: string, threadData: type_thread }) => {
 
-    threadsArea: "threads" | "thread" = "threads";
-
-    _ElementThreads = () => {
-        const [, forceUpdate] = React.useState({});
-        this.updateThreads = forceUpdate;
-
-        if (this.threadsArea === "threads") {
-            return (
-                <div style={{
-                    paddingLeft: 50,
-                    paddingRight: 50,
-                    fontFamily: "sans-serif",
-                    width: "90%",
-                }}>
-                    <table style={{
-                    }}>
-                        <tbody>
-                            {Object.entries(this.getThreadsData()).map(([threadId, thread]) => {
-                                return (
-                                    <this._ElementThreadAbstract threadId={threadId} key={threadId}></this._ElementThreadAbstract>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            )
-        } else {
-            return (
-                <this._ElementThread></this._ElementThread>
-            )
-        }
-    }
-
-    _ElementThreadAbstract = ({ threadId }: { threadId: string }) => {
-        const threadData = this.getThreadsData()[threadId];
         const mainPostData = threadData[0];
         const title = mainPostData["title"];
         const author = mainPostData["author"];
         const time = mainPostData["time"];
         const text = mainPostData["text"];
         const topics = mainPostData["topics"];
+        const navigate = useNavigate();
 
         return (
             <tr>
                 <td onClick={async (event: any) => {
-                    const response = await fetch("/thread", {
-                        method: "POST",
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ threadId: threadId }),
-                    });
-                    const data = await response.json();
-                    console.log(data.result)
-                    this.threadsArea = "thread";
-                    this._threadData = data.result;
-
-                    this.updateThreads({});
-
-                    // manually change URL
+                    this.setThreadData(threadData);
                     const url = `/thread?${new URLSearchParams({ id: threadId })}`;
-                    window.history.pushState({}, '', url);
-
+                    navigate(url, { state: nanoid() })
                 }}>
                     {title}
                 </td>
@@ -283,11 +298,45 @@ export class App {
         )
     }
 
+    _ElementThreadWrapper = () => {
+        const location = useLocation();
+        return <this._ElementThread key={location.search}></this._ElementThread>
+    }
+
+    _ElementThreadsWrapper = () => {
+        const location = useLocation();
+        return <this._ElementThreads key={location.search}></this._ElementThreads>
+    }
+
+    _ElementThreads = () => {
+        return (
+            <div style={{
+                paddingLeft: 50,
+                paddingRight: 50,
+                fontFamily: "sans-serif",
+                width: "90%",
+            }}>
+                <table style={{
+                }}>
+                    <tbody>
+                        {Object.entries(this.getThreadsData()).map(([threadId, threadData]) => {
+                            return (
+                                <this._ElementThreadThumbnail threadId={threadId} threadData={threadData} key={threadId}></this._ElementThreadThumbnail>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        )
+    }
+
     _ElementThread = () => {
-        const threadData = this._threadData;
+        const location = useLocation();
+
+        const threadData = this.getThreadData();
         console.log(threadData)
         if (threadData === undefined) {
-            return null;
+            return <div>thread empty</div>;
         }
         const mainPostData = threadData[0];
         const title = mainPostData["title"];
@@ -356,7 +405,16 @@ export class App {
     setThreadsData = (newData: type_threads) => {
         this._threadsData = newData;
     }
+
+    setThreadData = (newData: type_thread) => {
+        this._threadData = newData;
+    }
+
+    getThreadData = () => {
+        return this._threadData;
+    }
 }
+
 
 const app = new App();
 
