@@ -61,6 +61,7 @@ export class SearchBar {
                     display: "inline-flex",
                     justifyContent: "center",
                     alignItems: "center",
+                    fontFamily: "Inter, sans-serif",
                 }}
             >
                 <input
@@ -72,6 +73,7 @@ export class SearchBar {
                         // backgroundColor: "yellow",
                         fontSize: 18,
                         margin: 0,
+                        fontFamily: "Inter, sans-serif",
                     }}
                     value={this.obtainKeywords()}
                     onChange={(event: any) => {
@@ -186,7 +188,6 @@ export class SearchBar {
         return (
             <div
                 style={{
-                    fontFamily: "sans-serif",
                     position: "relative",
                 }}
             >

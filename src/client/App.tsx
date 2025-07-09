@@ -84,7 +84,7 @@ export class App {
             </BrowserRouter>
         );
     }
-    
+
     Layout = () => {
         const navigate = useNavigate();
         React.useEffect(() => {
@@ -182,7 +182,8 @@ export class App {
         }, [])
 
         return (
-            <div>
+            <div style={{
+            }}>
                 <this._ElementTopBar></this._ElementTopBar>
                 <Outlet />
             </div>
@@ -269,7 +270,7 @@ export class App {
         )
     }
 
-    _ElementThreadThumbnail = ({ threadId, threadData }: { threadId: string, threadData: type_thread }) => {
+    _ElementThreadThumbnail = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
 
         const mainPostData = threadData[0];
         const title = mainPostData["title"];
@@ -280,21 +281,149 @@ export class App {
         const navigate = useNavigate();
 
         return (
-            <tr>
-                <td onClick={async (event: any) => {
-                    this.setThreadData(threadData);
-                    const url = `/thread?${new URLSearchParams({ id: threadId })}`;
-                    navigate(url, { state: nanoid() })
-                }}>
-                    {title}
-                </td>
-                <td>
-                    {author}
-                </td>
-                <td>
-                    {new Date(time).toISOString()}
-                </td>
+            <tr style={{
+                backgroundColor: index % 2 === 1 ? "rgba(255,255,255,1)" : "rgba(235, 235, 235, 1)",
+            }}>
+                <this._ElementThreadThumbnailTopics threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTopics>
+                <this._ElementThreadThumbnailTitle threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTitle>
+                <this._ElementThreadThumbnailAuthor threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailAuthor>
+                <this._ElementThreadThumbnailTime threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTime>
             </tr>
+        )
+    }
+
+    _ElementThreadThumbnailTitle = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
+        const navigate = useNavigate();
+        const mainPostData = threadData[0];
+        const title = mainPostData["title"];
+        const elementRef = React.useRef<any>(null);
+        return (
+            <td style={{
+                padding: 10,
+            }}>
+                <div
+                    ref={elementRef}
+                    onClick={async (event: any) => {
+                        this.setThreadData(threadData);
+                        const url = `/thread?${new URLSearchParams({ id: threadId })}`;
+                        navigate(url, { state: nanoid() })
+                    }}
+                    style={{
+                        cursor: "pointer",
+                        display: "inline-flex",
+                    }}
+                    onMouseEnter={() => {
+                        if (elementRef.current !== null) {
+                            elementRef.current.style["color"] = "rgba(0, 121, 52, 1)";
+                        }
+                    }}
+                    onMouseLeave={() => {
+                        if (elementRef.current !== null) {
+                            elementRef.current.style["color"] = "rgba(0, 0, 0, 1)";
+                        }
+                    }}
+                >
+                    {title}
+                </div>
+            </td>
+        )
+    }
+
+    _ElementThreadThumbnailTopics = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
+        const navigate = useNavigate();
+        const mainPostData = threadData[0];
+        const topics = mainPostData["topics"];
+        const elementRef = React.useRef<any>(null);
+        return (
+            <td style={{
+                padding: 10,
+            }}>
+                <div
+                    ref={elementRef}
+                    onClick={async (event: any) => {
+                        // todo:
+                        // this.setThreadData(threadData);
+                        // const url = `/thread?${new URLSearchParams({ id: threadId })}`;
+                        // navigate(url, { state: nanoid() })
+                    }}
+                    style={{
+                        cursor: "pointer",
+                        display: "inline-flex",
+                    }}
+                    onMouseEnter={() => {
+                        if (elementRef.current !== null) {
+                            elementRef.current.style["color"] = "rgba(0, 121, 52, 1)";
+                        }
+                    }}
+                    onMouseLeave={() => {
+                        if (elementRef.current !== null) {
+                            elementRef.current.style["color"] = "rgba(0, 0, 0, 1)";
+                        }
+                    }}
+                >
+                    {topics}
+                </div>
+            </td>
+        )
+    }
+
+
+    _ElementThreadThumbnailAuthor = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
+        const navigate = useNavigate();
+        const mainPostData = threadData[0];
+        const author = mainPostData["author"];
+        const elementRef = React.useRef<any>(null);
+        return (
+            <td style={{
+                padding: 10,
+            }}>
+                <div
+                    ref={elementRef}
+                    onClick={async (event: any) => {
+                        // todo:
+                        // this.setThreadData(threadData);
+                        // const url = `/thread?${new URLSearchParams({ id: threadId })}`;
+                        // navigate(url, { state: nanoid() })
+                    }}
+                    style={{
+                        cursor: "pointer",
+                        display: "inline-flex",
+                    }}
+                    onMouseEnter={() => {
+                        if (elementRef.current !== null) {
+                            elementRef.current.style["color"] = "rgba(0, 121, 52, 1)";
+                        }
+                    }}
+                    onMouseLeave={() => {
+                        if (elementRef.current !== null) {
+                            elementRef.current.style["color"] = "rgba(0, 0, 0, 1)";
+                        }
+                    }}
+                >
+                    {author}
+                </div>
+            </td>
+        )
+    }
+
+    _ElementThreadThumbnailTime = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
+        const navigate = useNavigate();
+        const mainPostData = threadData[0];
+        const time = mainPostData["time"];
+        const elementRef = React.useRef<any>(null);
+        return (
+            <td style={{
+                padding: 10,
+            }}>
+                <div
+                    ref={elementRef}
+                    style={{
+                        display: "inline-flex",
+                    }}
+                >
+                    {new Date(time).toISOString()}
+                </div>
+            </td>
         )
     }
 
@@ -313,15 +442,15 @@ export class App {
             <div style={{
                 paddingLeft: 50,
                 paddingRight: 50,
-                fontFamily: "sans-serif",
+                backgroundColor: "green",
                 width: "90%",
             }}>
                 <table style={{
                 }}>
                     <tbody>
-                        {Object.entries(this.getThreadsData()).map(([threadId, threadData]) => {
+                        {Object.entries(this.getThreadsData()).map(([threadId, threadData], index) => {
                             return (
-                                <this._ElementThreadThumbnail threadId={threadId} threadData={threadData} key={threadId}></this._ElementThreadThumbnail>
+                                <this._ElementThreadThumbnail index={index} threadId={threadId} threadData={threadData} key={threadId}></this._ElementThreadThumbnail>
                             )
                         })}
                     </tbody>
@@ -353,38 +482,6 @@ export class App {
                 {text}
                 {topics}
             </div>
-        )
-    }
-
-    _ElementPostAbstract = ({ postData, index }: { postData: type_post, index: number }) => {
-        // index = 0, main post
-        //         title: string,
-        // author: string,
-        // time: number, // ms since epoch, time of post
-        // keywords: string[],
-        // // id: string, // uuid
-        // // subId: number, // 0 means it is the first post in a thread, 1 means the first follow-up post in a thread
-        // text: string,
-        // topics: type_topic[], // could be multiple system, vacuum, cryo, admin, control, magnet, ...
-        // attachments: string[], // any type file, e.g. pic, txt, others, located in the month folder
-        const title = postData["title"];
-        const author = postData["author"];
-        const time = postData["time"];
-        const text = postData["text"];
-        const topics = postData["topics"];
-        return (
-            <tr>
-                <td>
-                    {title}
-                </td>
-                <td>
-                    {author}
-                </td>
-                <td>
-                    {new Date(time).toISOString()}
-                </td>
-
-            </tr>
         )
     }
 
