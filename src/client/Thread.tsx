@@ -16,6 +16,9 @@ import Figure from 'tiptap-extension-figure';
 // import FigureCaption from 'tiptap-extension-figure-caption';
 import Image from '@tiptap/extension-image';
 // import StarterKit from '@tiptap/starter-kit';
+// import ImageResize from 'tiptap-extension-resize-image';
+import { ImageResize } from './ImageResize';
+
 
 const MenuBar = ({ editor }: any) => {
     // const { editor } = useCurrentEditor()
@@ -359,7 +362,7 @@ export class Thread {
     }
 
 
-    _ElementPostButton = ({ text }: { text: string }) => {
+    _ElementPublishPostButton = ({ text }: { text: string }) => {
         const navigate = useNavigate();
         const elementRef = React.useRef<any>(null);
         return (
@@ -368,12 +371,23 @@ export class Thread {
                 onClick={async () => {
                     // write to server
 
+
+                    // extract image from string
+                    // upload image
+                    // update text with new link
+                    // const rawHtml = editor.getHTML();
+                    const cleanText = await this.replaceBase64WithUrls(text);
+                    console.log(cleanText)
+
+                    // Now send `cleanHtml` to your backend
+                    console.log('Ready to publish:', cleanText);
+
                     const postData: type_post = {
                         title: "",
                         author: "",
                         time: 0,
                         keywords: [],
-                        text: text,
+                        text: cleanText,
                         topics: [],
                         attachments: [],
                     };
@@ -440,6 +454,48 @@ export class Thread {
         )
     }
 
+
+    _ElementCancelPostButton = () => {
+        const navigate = useNavigate();
+        const elementRef = React.useRef<any>(null);
+        return (
+            <div
+                ref={elementRef}
+                onClick={async () => {
+                    this.setIsAddingPost(false);
+                    const url = `/thread?id=${this.getThreadId()}`;
+                    navigate(url)
+
+
+                }}
+                style={{
+                    display: "inline-flex",
+                    padding: 5,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                    backgroundColor: "rgba(235, 235, 235, 1)",
+                    cursor: "pointer",
+                    marginRight: 10,
+                    borderRadius: 5,
+                    transition: "background-color 0.2s ease",
+                }}
+                onMouseEnter={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = "rgba(220, 220, 220, 1)";
+                    }
+                }}
+
+                onMouseLeave={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = "rgba(235, 235, 235, 1)";
+                    }
+                }}
+            >
+                {"Cancel"}
+            </div>
+        )
+    }
+
     _ElementAddPostButton = () => {
         const navigate = useNavigate();
         const elementRef = React.useRef<any>(null);
@@ -484,8 +540,9 @@ export class Thread {
         const [text, setText] = useState('<p>Hello World</p>');
 
         const editor = useEditor({
-            extensions: [StarterKit, Image, Figure],
-            content: '<p>Hello World</p>',
+            extensions: [StarterKit, Image, Figure, ImageResize],
+            // content: '      <p>Resize the image below:</p>      <img src="https://picsum.photos/536/354" />',
+            content: "zhubobofu",
             onUpdate({ editor }) {
                 setText(editor.getHTML());
             },
@@ -495,6 +552,44 @@ export class Thread {
         if (!editor) {
             return <p>Loading editor...</p>;
         }
+        useEffect(() => {
+            if (!editor) return;
+
+            const handleDrop = (event: DragEvent) => {
+                event.preventDefault();
+
+                const files = event.dataTransfer?.files;
+                if (!files || files.length === 0) return;
+
+                const file = files[0];
+                if (!file.type.startsWith('image/')) return;
+
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const src = reader.result as string;
+
+                    editor
+                        .chain()
+                        .focus()
+                        .insertContent({
+                            type: 'image',
+                            attrs: {
+                                src,
+                            },
+                        })
+                        .run();
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const dom = editor.view.dom;
+            dom.addEventListener('drop', handleDrop);
+
+            return () => {
+                dom.removeEventListener('drop', handleDrop);
+            };
+        }, [editor]);
+
 
         if (this.isAddingPost()) {
 
@@ -503,11 +598,14 @@ export class Thread {
                     <MenuBar editor={editor}></MenuBar>
 
                     <EditorContent editor={editor} />
-                    {/* <h3>Live HTML Output:</h3>
-                <div dangerouslySetInnerHTML={{ __html: text }} /> */}
-
-                    {/* Post button */}
-                    <this._ElementPostButton text={text}></this._ElementPostButton>
+                    <div style={{
+                        display: "inline-flex",
+                        flexDirection: "row",
+                    }}>
+                        {/* Post button */}
+                        <this._ElementPublishPostButton text={text}></this._ElementPublishPostButton>
+                        <this._ElementCancelPostButton></this._ElementCancelPostButton>
+                    </div>
                 </>
             );
         } else {
@@ -516,6 +614,45 @@ export class Thread {
             )
         }
 
+    }
+
+
+    extractBase64Images = (html: string) => {
+        const imgRegex = /<img[^>]+src="(data:image\/[^"]+)"[^>]*>/g;
+        const matches: string[] = [];
+        let match;
+
+        while ((match = imgRegex.exec(html)) !== null) {
+            matches.push(match[1]); // the base64 string
+        }
+
+        return matches;
+    }
+
+    uploadBase64Image = async (base64: string): Promise<string> => {
+        const res = await fetch('/upload-image', {
+            method: 'POST',
+            body: JSON.stringify({ image: base64 }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!res.ok) throw new Error('Upload failed');
+
+        const data = await res.json();
+        return data.url; // e.g., https://yourcdn.com/uploaded.jpg
+    }
+
+    replaceBase64WithUrls = async (html: string): Promise<string> => {
+        const base64s = this.extractBase64Images(html);
+
+        for (const base64 of base64s) {
+            const url = await this.uploadBase64Image(base64);
+            html = html.replace(base64, url);
+        }
+
+        return html;
     }
 
 

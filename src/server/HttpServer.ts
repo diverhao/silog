@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
 import { DbData, type_search_query } from './DbData';
-
+import * as fs from "fs";
 
 export class HttpServer {
     private _server = express();
@@ -16,7 +16,7 @@ export class HttpServer {
     start = () => {
         this.getServer().use(express.static(path.join(__dirname, 'resources')));
         this.getServer().use(express.static(path.join(__dirname, '../webpack')));
-        this.getServer().use(express.json()); // required to parse JSON body
+        this.getServer().use(express.json({limit: "50mb"})); // required to parse JSON body
 
         this.getServer().get('/', (req: Request, res: Response) => {
             res.sendFile(path.join(__dirname, 'resources/index.html'))
@@ -25,7 +25,7 @@ export class HttpServer {
         this.getServer().get('/search', (req: Request, res: Response) => {
             res.sendFile(path.join(__dirname, 'resources/index.html'))
         });
-        
+
         this.getServer().get('/thread', (req: Request, res: Response) => {
             res.sendFile(path.join(__dirname, 'resources/index.html'))
         });
@@ -67,7 +67,7 @@ export class HttpServer {
 
 
         this.getServer().post('/follow-up-post', (req, res) => {
-            let {postData, threadId} = req.body;
+            let { postData, threadId } = req.body;
             const result = this.getDbData().addFollowUpPost(postData, threadId);
             // const searchResult = this.getDbData().getThread(threadId);
 
@@ -75,8 +75,20 @@ export class HttpServer {
                 threadId: threadId,
                 result: result, // true or false
             });
-
         })
+
+        this.getServer().post('/upload-image', async (req, res) => {
+            const { image } = req.body;
+            console.log("upload image", image)
+
+            const buffer = Buffer.from(image.split(',')[1], 'base64');
+            const fileName = `upload-${Date.now()}.png`;
+
+            fs.writeFileSync(path.join(__dirname, `./resources/${fileName}`), buffer);
+
+            res.json({ url: `/${fileName}` });
+        });
+
 
         // this.getServer().all("/{*any}", (req, res) => {
         //     // console.log("AAABBB")
