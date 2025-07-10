@@ -14,6 +14,7 @@ import {
     Navigate,
 } from 'react-router-dom';
 import { nanoid } from 'nanoid';
+import { Thread } from './Thread';
 
 
 export type type_search_query = {
@@ -59,7 +60,7 @@ export class App {
 
     topicsStr = "";
     _threadsData: type_threads = {};
-    _threadData: type_thread | undefined = undefined;
+    _thread: Thread = new Thread();
     _searchBar: SearchBar;
 
     constructor() {
@@ -78,7 +79,7 @@ export class App {
                         {/* <Route index element={<Navigate to="/search?timeRange=0+3751917376000"></Navigate>} />  */}
                         <Route index element={<this._ElementThreadsWrapper></this._ElementThreadsWrapper>}></Route>
                         <Route path="search" element={<this._ElementThreadsWrapper></this._ElementThreadsWrapper>}></Route>
-                        <Route path="thread" element={<this._ElementThread></this._ElementThread>}></Route>
+                        <Route path="thread" element={<this._ElementThreadWrapper></this._ElementThreadWrapper>}></Route>
                     </Route>
                 </Routes>
             </BrowserRouter>
@@ -114,7 +115,7 @@ export class App {
                             return res.json()
                         }
                     ).then(data => {
-                        this.setThreadData(data.result);
+                        this.getThread().setThreadData(threadId, data.result);
                         const url = `/thread?${new URLSearchParams({ id: threadId })}`;
                         navigate(url, { state: nanoid() });
                     })
@@ -304,7 +305,7 @@ export class App {
                 <div
                     ref={elementRef}
                     onClick={async (event: any) => {
-                        this.setThreadData(threadData);
+                        this.getThread().setThreadData(threadId, threadData);
                         const url = `/thread?${new URLSearchParams({ id: threadId })}`;
                         navigate(url, { state: nanoid() })
                     }}
@@ -429,7 +430,7 @@ export class App {
 
     _ElementThreadWrapper = () => {
         const location = useLocation();
-        return <this._ElementThread key={location.search}></this._ElementThread>
+        return this.getThread().getElement();
     }
 
     _ElementThreadsWrapper = () => {
@@ -459,32 +460,6 @@ export class App {
         )
     }
 
-    _ElementThread = () => {
-        const location = useLocation();
-
-        const threadData = this.getThreadData();
-        console.log(threadData)
-        if (threadData === undefined) {
-            return <div>thread empty</div>;
-        }
-        const mainPostData = threadData[0];
-        const title = mainPostData["title"];
-        const author = mainPostData["author"];
-        const time = mainPostData["time"];
-        const text = mainPostData["text"];
-        const topics = mainPostData["topics"];
-
-        return (
-            <div>
-                {title}
-                {author}
-                {time}
-                {text}
-                {topics}
-            </div>
-        )
-    }
-
 
 
     getElement = () => {
@@ -503,12 +478,8 @@ export class App {
         this._threadsData = newData;
     }
 
-    setThreadData = (newData: type_thread) => {
-        this._threadData = newData;
-    }
-
-    getThreadData = () => {
-        return this._threadData;
+    getThread = () => {
+        return this._thread;
     }
 }
 

@@ -65,6 +65,19 @@ export class HttpServer {
             });
         });
 
+
+        this.getServer().post('/follow-up-post', (req, res) => {
+            let {postData, threadId} = req.body;
+            const result = this.getDbData().addFollowUpPost(postData, threadId);
+            // const searchResult = this.getDbData().getThread(threadId);
+
+            res.json({
+                threadId: threadId,
+                result: result, // true or false
+            });
+
+        })
+
         // this.getServer().all("/{*any}", (req, res) => {
         //     // console.log("AAABBB")
         //     res.sendFile(path.join(__dirname, 'resources/index.html'))

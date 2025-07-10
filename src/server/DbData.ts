@@ -190,11 +190,16 @@ export class DbData {
 
     addFollowUpPost = (newFollowUpPost: type_post, threadId: string) => {
         // find the main post object
+        console.log("add follow up post:", newFollowUpPost);
         const thread = this.getThread(threadId);
         if (thread === undefined) {
             // todo: 
+            return false;
         } else {
+            // modify its time
+            newFollowUpPost["time"] = Date.now();
             thread.push(newFollowUpPost);
+            return true;
         }
     }
 

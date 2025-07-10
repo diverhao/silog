@@ -13,6 +13,10 @@
     "license": "ISC",
     "description": "",
     "dependencies": {
+        "@tiptap/extension-color": "^2.25.0",
+        "@tiptap/pm": "^2.25.0",
+        "@tiptap/react": "^2.25.0",
+        "@tiptap/starter-kit": "^2.25.0",
         "@types/express": "^5.0.3",
         "@types/node": "^24.0.10",
         "@types/react": "^19.1.8",
@@ -28,6 +32,7 @@
         "react-calendar": "^6.0.0",
         "react-dom": "^19.1.0",
         "react-router-dom": "^7.6.3",
+        "tiptap-extension-figure": "^1.0.0",
         "ts-loader": "^9.5.2",
         "uuid": "^11.1.0",
         "webpack": "^5.99.9",
@@ -35,6 +40,8 @@
     },
     "devDependencies": {
         "css-loader": "^7.1.2",
+        "sass": "^1.89.2",
+        "sass-loader": "^16.0.5",
         "style-loader": "^4.0.0",
         "webpack-dev-server": "^5.2.2"
     }
