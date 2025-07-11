@@ -185,6 +185,7 @@ export class DbData {
         const newThread: type_thread = [newPost];
         const newThreadId = uuid();
         month[newThreadId] = newThread;
+        console.log("new thread", newThread)
         return newThreadId;
     }
 
@@ -194,6 +195,7 @@ export class DbData {
         const thread = this.getThread(threadId);
         if (thread === undefined) {
             // todo: 
+            console.log("Thread", threadId, "not found");
             return false;
         } else {
             // modify its time

@@ -152,7 +152,7 @@ export class SearchBar {
                     }
 
 
-                    if (this.getApp().getThread().getState() === "adding-post") {
+                    if (this.getApp().getThread().getState() === "adding-post" || this.getApp().getThread().getState() === "adding-thread" ) {
                         const confirmed = window.confirm("Do you want to disgard the post?");
                         if (confirmed === false) {
                             return;

@@ -18,6 +18,7 @@ import {
 } from 'react-router-dom';
 import { nanoid } from 'nanoid';
 import { Thread } from './Thread';
+import { v4 as uuidv4 } from "uuid";
 
 
 export type type_search_query = {
@@ -108,7 +109,7 @@ export class App {
             const searchQuery: Record<string, any> = {};
             searchQuery["timeRange"] = [0, 3751917376000];
 
-            if (this.getThread().getState() === "adding-post") {
+            if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
                 const confirmed = window.confirm("Do you want to disgard the post?");
                 if (confirmed === false) {
                     return;
@@ -251,7 +252,7 @@ export class App {
                                 searchQuery["authors"] = this.getSearchBar().authors;
                             }
 
-                            if (this.getThread().getState() === "adding-post") {
+                            if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
                                 const confirmed = window.confirm("Do you want to disgard the post?");
                                 if (confirmed === false) {
                                     return;
@@ -289,6 +290,7 @@ export class App {
                         }}
                     ></img>
                     {this.getSearchBar().getElement()}
+                    <this._ElementAddThreadButton></this._ElementAddThreadButton>
                 </div>
                 <div style={{
                     width: "90%",
@@ -303,6 +305,60 @@ export class App {
             </div>
         )
     }
+
+    _ElementAddThreadButton = () => {
+        const navigate = useNavigate();
+        const elementRef = React.useRef<any>(null);
+        return (
+            <div
+                ref={elementRef}
+                onClick={async () => {
+                    // this.setState("adding-post");
+                    // in transition, waiting for approval
+                    this.getThread().setState("adding-thread");
+                    const threadId = uuidv4();
+                    this.getThread().setThreadData(threadId, [
+                        // {
+                        //     title: "new title",
+                        //     author: "new author",
+                        //     time: 0,
+                        //     keywords: [],
+                        //     text: "new text",
+                        //     topics: [],
+                        //     attachments: [],
+                        // }
+                    ]);
+                    const url = `/thread?id=${threadId}`;
+                    navigate(url)
+                }}
+                style={{
+                    display: "inline-flex",
+                    padding: 5,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                    backgroundColor: "rgba(235, 235, 235, 1)",
+                    cursor: "pointer",
+                    marginRight: 10,
+                    borderRadius: 5,
+                    transition: "background-color 0.2s ease",
+                }}
+                onMouseEnter={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = "rgba(220, 220, 220, 1)";
+                    }
+                }}
+
+                onMouseLeave={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = "rgba(235, 235, 235, 1)";
+                    }
+                }}
+            >
+                {"Add New Log"}
+            </div>
+        )
+    }
+
 
     _ElementThreadThumbnail = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
 
@@ -338,7 +394,7 @@ export class App {
                 <div
                     ref={elementRef}
                     onClick={async (event: any) => {
-                        if (this.getThread().getState() === "adding-post") {
+                        if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
                             const confirmed = window.confirm("Do you want to disgard the post?");
                             if (confirmed === false) {
                                 return;

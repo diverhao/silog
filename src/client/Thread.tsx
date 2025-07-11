@@ -290,7 +290,7 @@ const MenuBar = ({ editor }: any) => {
 export class Thread {
     _threadData: type_thread | undefined = undefined;
     _threadId: string = "";
-    _state: "view" | "adding-post" = "view";
+    _state: "view" | "adding-post" | "adding-thread" = "view";
     _editor: Editor | null = null;
 
     constructor() {
@@ -310,11 +310,26 @@ export class Thread {
             return <div>thread empty</div>;
         }
         const mainPostData = threadData[0];
-        const title = mainPostData["title"];
-        const author = mainPostData["author"];
-        const time = mainPostData["time"];
-        const text = mainPostData["text"];
-        const topics = mainPostData["topics"];
+        // const title = mainPostData["title"];
+        // const author = mainPostData["author"];
+        // const time = mainPostData["time"];
+        // const text = mainPostData["text"];
+        // const topics = mainPostData["topics"];
+
+        if (mainPostData === undefined) {
+            // new thread
+            return (
+                <div style={{
+                    paddingLeft: 50,
+                    paddingRight: 50,
+                    // backgroundColor: "green",
+                    width: "90%",
+
+                }}>
+                    <this._ElementNewPost />
+                </div>
+            )
+        }
 
         return (
             <div style={{
@@ -326,10 +341,16 @@ export class Thread {
             }}>
 
                 {threadData.map((postData: type_post, index: number) => {
-                    return (
-                        <this._ElementPost postData={postData} index={index}></this._ElementPost>
-                    )
+                    if (this.getState() === "adding-thread") {
+                        return null;
+                    } else {
+                        return (
+                            <this._ElementPost postData={postData} index={index}></this._ElementPost>
+                        )
+                    }
                 })}
+
+                {/* shown in "adding-post" */}
                 <this._ElementNewPost />
             </div>
         )
@@ -450,7 +471,7 @@ export class Thread {
     }
 
 
-    _ElementPublishPostButton = ({ text, setText, editor }: { text: string, setText: any, editor: Editor }) => {
+    _ElementPublishPostButton = ({ text, setText, editor, title }: { text: string, setText: any, editor: Editor, title: string }) => {
         const navigate = useNavigate();
         const elementRef = React.useRef<any>(null);
 
@@ -463,15 +484,14 @@ export class Thread {
                     if (confirmed === false) {
                         return;
                     }
-
-
+                    const oldState = this.getState();
                     this.setState("view");
                     // write to server
                     const cleanText = await this.replaceBase64WithUrls(text);
 
 
                     const postData: type_post = {
-                        title: "",
+                        title: oldState === "adding-thread" ? title : "",
                         author: "",
                         time: 0,
                         keywords: [],
@@ -480,7 +500,7 @@ export class Thread {
                         attachments: [],
                     };
 
-                    const response = await fetch("/follow-up-post", {
+                    const response = await fetch(oldState === "adding-post" ? "/follow-up-post" : "/new-thread", {
                         method: "POST",
                         headers: {
                             'Content-Type': 'application/json',
@@ -489,7 +509,8 @@ export class Thread {
                     });
                     const data = await response.json();
                     const result = data["result"];
-                    if (result === true) {
+                    const threadId = data["threadId"];
+                    if (result === true && threadId === this.getThreadId()) {
                         console.log("step 2")
                         // refresh page
                         fetch("/thread", {
@@ -512,6 +533,27 @@ export class Thread {
                                 navigate(url);
                             })
 
+                    } else if (result === true && threadId !== this.getThreadId()) {
+                        // new-thread POST, result === new thread Id
+                        fetch("/thread", {
+                            method: "POST",
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ threadId: threadId }),
+                        })
+                            .then(
+                                (res) => {
+                                    console.log("step 3")
+                                    return res.json()
+                                }
+                            ).then(data => {
+                                setText("");
+                                editor.commands.setContent("");
+                                this.setThreadData(threadId, data.result);
+                                const url = `/thread?${new URLSearchParams({ id: threadId })}`;
+                                navigate(url);
+                            })
                     } else {
                         // todo:
                     }
@@ -559,9 +601,16 @@ export class Thread {
                     }
                     setText("");
                     editor.commands.setContent("");
-                    this.setState("view");
-                    const url = `/thread?id=${this.getThreadId()}`;
-                    navigate(url)
+                    if (this.getState() === "adding-post") {
+                        this.setState("view");
+                        const url = `/thread?id=${this.getThreadId()}`;
+                        navigate(url)
+                    } else if (this.getState() === "adding-thread") {
+                        console.log("navigate to /")
+                        this.setState("view");
+                        const url = `/`;
+                        navigate(url)
+                    }
                 }}
 
                 style={{
@@ -633,9 +682,45 @@ export class Thread {
         )
     }
 
+    _ElementNewThreadTitle = ({ title, setTitle }: { title: string, setTitle: any }) => {
+
+        return (
+            <form
+                style={{
+                    width: "100%",
+                }}
+                onSubmit={(event: any) => { event.preventDefault() }}>
+                <input
+                    style={{
+                        fontSize: 28,
+                        outline: "none",
+                        padding: 15,
+                        paddingTop: 8,
+                        paddingBottom: 8,
+                        // border: "none",
+                        marginBottom: 20,
+                        fontFamily: "Inter, sans-serif",
+                        border: "solid 1px rgba(180, 180, 180, 1)",
+                        borderRadius: 26,
+                        width: "100%",
+                        boxSizing: "border-box",
+                    }}
+                    spellCheck={false}
+                    placeholder='Title'
+                    value={title}
+                    onChange={(event: any) => {
+                        setTitle(event.target.value);
+                    }}
+                >
+                </input>
+            </form>
+        )
+    }
+
 
     _ElementNewPost = () => {
         const [text, setText] = useState('<p>Hello World</p>');
+        const [title, setTitle] = useState("");
 
         const editor = useEditor({
             extensions: [StarterKit, Image, Figure, ImageResize, CustomImage],
@@ -652,7 +737,7 @@ export class Thread {
 
         useEffect(() => {
             if (!editor) return;
-
+            // drop down image
             const handleDrop = (event: DragEvent) => {
                 event.preventDefault();
 
@@ -681,21 +766,61 @@ export class Thread {
                 reader.readAsDataURL(file);
             };
 
+            // paste image
+            const handlePaste = (event: ClipboardEvent) => {
+                const items = event.clipboardData?.items;
+                if (!items) return;
+
+                for (const item of items) {
+                    if (item.type.startsWith('image/')) {
+                        event.preventDefault(); // prevent default paste behavior
+
+                        const file = item.getAsFile();
+                        if (!file) return;
+
+                        const reader = new FileReader();
+
+                        reader.onload = () => {
+                            const src = reader.result as string;
+
+                            editor
+                                .chain()
+                                .focus()
+                                .insertContent({
+                                    type: 'image',
+                                    attrs: {
+                                        src: src,
+                                        style: 'width: 300px; height: auto;',
+                                    },
+                                })
+                                .run();
+                        };
+
+                        reader.readAsDataURL(file);
+                        break; // stop after first image
+                    }
+                }
+            };
+
             const dom = editor.view.dom;
             dom.addEventListener('drop', handleDrop);
+            dom.addEventListener('paste', handlePaste);
 
             return () => {
+                dom.removeEventListener('paste', handlePaste);
                 dom.removeEventListener('drop', handleDrop);
             };
         }, [editor]);
+        console.log("this.getState() = ", this.getState())
 
-
-        if (this.getState() === "adding-post") {
+        if (this.getState() === "adding-post" || this.getState() === "adding-thread") {
 
             return (
                 <div style={{
                     marginBottom: 100,
                 }}>
+                    {this.getState() === "adding-thread" ? <this._ElementNewThreadTitle title={title} setTitle={setTitle}></this._ElementNewThreadTitle> : null}
+
                     <MenuBar editor={editor}></MenuBar>
 
                     <EditorContent editor={editor} className="my-editor" />
@@ -704,7 +829,7 @@ export class Thread {
                         flexDirection: "row",
                     }}>
                         {/* Post button */}
-                        <this._ElementPublishPostButton text={text} setText={setText} editor={editor}></this._ElementPublishPostButton>
+                        <this._ElementPublishPostButton text={text} setText={setText} editor={editor} title={title}></this._ElementPublishPostButton>
                         <this._ElementCancelPostButton setText={setText} editor={editor}></this._ElementCancelPostButton>
                     </div>
                 </div>
@@ -777,29 +902,13 @@ export class Thread {
         return <this._ElementThread></this._ElementThread>
     }
 
-    // isAddingPost = () => {
-    //     return this._addingPost;
-    // }
-
-    // setIsAddingPost = (newState: boolean) => {
-    //     this._addingPost = newState;
-    // }
-
-    // setIsPublisingPost = (newState: boolean) => {
-    //     this._publishingPost = newState;
-    // }
-
-    // isPublishingPost = () => {
-    //     return this._publishingPost;
-    // }
-
     getState = () => {
         return this._state;
     }
 
 
 
-    setState = (newState: "view" | "adding-post") => {
+    setState = (newState: "view" | "adding-post" | "adding-thread") => {
         this._state = newState;
     }
 

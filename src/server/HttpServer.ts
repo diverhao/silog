@@ -77,6 +77,18 @@ export class HttpServer {
             });
         })
 
+
+        this.getServer().post('/new-thread', (req, res) => {
+            let { postData, threadId } = req.body;
+            const newThreadId = this.getDbData().addThread(postData);
+            // const searchResult = this.getDbData().getThread(threadId);
+
+            res.json({
+                threadId: newThreadId,
+                result: true, // true or false
+            });
+        })
+
         this.getServer().post('/upload-image', async (req, res) => {
             const { image } = req.body;
             console.log("upload image", image)
