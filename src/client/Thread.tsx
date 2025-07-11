@@ -13,12 +13,46 @@ import StarterKit from '@tiptap/starter-kit'
 import { useEditor, Editor, EditorContent } from '@tiptap/react';
 
 import Figure from 'tiptap-extension-figure';
-// import FigureCaption from 'tiptap-extension-figure-caption';
 import Image from '@tiptap/extension-image';
-// import StarterKit from '@tiptap/starter-kit';
-// import ImageResize from 'tiptap-extension-resize-image';
 import { ImageResize } from './ImageResize';
+// import { useBlocker } from 'react-router-dom';
 
+const CustomImage = Image.extend({
+    addAttributes() {
+        return {
+            ...this.parent?.(),
+            width: {
+                default: null,
+                parseHTML: element => element.getAttribute('width'),
+                renderHTML: attributes => {
+                    if (!attributes.width) return {};
+                    return { width: attributes.width };
+                },
+            },
+            height: {
+                default: null,
+                parseHTML: element => element.getAttribute('height'),
+                renderHTML: attributes => {
+                    if (!attributes.height) return {};
+                    return { height: attributes.height };
+                },
+            },
+        };
+    },
+});
+
+const _ElementEditorButton = ({ children, disabled, className, onClick }: any) => {
+    return <button
+        style={{
+            marginRight: 5,
+        }}
+        onClick={onClick}
+        disabled={disabled}
+        className={className}
+    >
+        {children}
+    </button>
+}
 
 const MenuBar = ({ editor }: any) => {
     // const { editor } = useCurrentEditor()
@@ -30,7 +64,48 @@ const MenuBar = ({ editor }: any) => {
     return (
         <div className="control-group">
             <div className="button-group">
-                <button
+
+                <_ElementEditorButton
+                    onClick={() => {
+                        console.log("trying to insert a fig")
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*'; // Only allow image files
+                        console.log("step  2")
+                        input.onchange = () => {
+                            console.log("step  3")
+                            const file = input.files?.[0];
+                            if (!file) return;
+
+                            const reader = new FileReader();
+
+                            reader.onload = () => {
+                                const src = reader.result as string;
+                                console.log("Base64 string:", src);
+                                editor
+                                    .chain()
+                                    .focus()
+                                    .insertContent({
+                                        type: 'image',
+                                        attrs: {
+                                            src: src,
+                                            style: 'width: 300px; height: auto;',
+                                        },
+                                    })
+                                    .run();
+
+                                // You can now use the base64 string (e.g., insert it into <img>, send to server, etc.)
+                            };
+
+                            reader.readAsDataURL(file); // Read file as Base64
+                        };
+                        input.click();
+
+                    }}
+                >
+                    Insert Figure
+                </_ElementEditorButton>
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleBold().run()}
                     disabled={
                         !editor.can()
@@ -42,16 +117,22 @@ const MenuBar = ({ editor }: any) => {
                     className={editor.isActive('bold') ? 'is-active' : ''}
                 >
                     Bold
-                </button>
-                <button
-                    onClick={() => {
-                        editor.chain().focus().setImage({ src: "https://placehold.co/800x400" }).run()
-                    }}
+                </_ElementEditorButton>
+                <_ElementEditorButton
+                    onClick={() => editor.chain().focus().toggleRe().run()}
+                    disabled={
+                        !editor.can()
+                            .chain()
+                            .focus()
+                            .toggleBold()
+                            .run()
+                    }
+                    className={editor.isActive('bold') ? 'is-active' : ''}
                 >
-                    Insert Figure
-                </button>
+                    Regular
+                </_ElementEditorButton>
 
-                <button
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleItalic().run()}
                     disabled={
                         !editor.can()
@@ -63,8 +144,9 @@ const MenuBar = ({ editor }: any) => {
                     className={editor.isActive('italic') ? 'is-active' : ''}
                 >
                     Italic
-                </button>
-                <button
+                </_ElementEditorButton>
+
+                {/* <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleStrike().run()}
                     disabled={
                         !editor.can()
@@ -76,8 +158,8 @@ const MenuBar = ({ editor }: any) => {
                     className={editor.isActive('strike') ? 'is-active' : ''}
                 >
                     Strike
-                </button>
-                <button
+                </_ElementEditorButton> */}
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleCode().run()}
                     disabled={
                         !editor.can()
@@ -89,86 +171,86 @@ const MenuBar = ({ editor }: any) => {
                     className={editor.isActive('code') ? 'is-active' : ''}
                 >
                     Code
-                </button>
-                <button onClick={() => editor.chain().focus().unsetAllMarks().run()}>
+                </_ElementEditorButton>
+                {/* <_ElementEditorButton onClick={() => editor.chain().focus().unsetAllMarks().run()}>
                     Clear marks
-                </button>
-                <button onClick={() => editor.chain().focus().clearNodes().run()}>
+                </_ElementEditorButton>
+                <_ElementEditorButton onClick={() => editor.chain().focus().clearNodes().run()}>
                     Clear nodes
-                </button>
-                <button
+                </_ElementEditorButton> */}
+                {/* <_ElementEditorButton
                     onClick={() => editor.chain().focus().setParagraph().run()}
                     className={editor.isActive('paragraph') ? 'is-active' : ''}
                 >
                     Paragraph
-                </button>
-                <button
+                </_ElementEditorButton> */}
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
                     className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
                 >
-                    H1
-                </button>
-                <button
+                    Large font
+                </_ElementEditorButton>
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
                     className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
                 >
-                    H2
-                </button>
-                <button
+                    Medium font
+                </_ElementEditorButton>
+                {/* <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
                     className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
                 >
                     H3
-                </button>
-                <button
+                </_ElementEditorButton>
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
                     className={editor.isActive('heading', { level: 4 }) ? 'is-active' : ''}
                 >
                     H4
-                </button>
-                <button
+                </_ElementEditorButton>
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
                     className={editor.isActive('heading', { level: 5 }) ? 'is-active' : ''}
                 >
                     H5
-                </button>
-                <button
+                </_ElementEditorButton>
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
                     className={editor.isActive('heading', { level: 6 }) ? 'is-active' : ''}
                 >
                     H6
-                </button>
-                <button
+                </_ElementEditorButton> */}
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleBulletList().run()}
                     className={editor.isActive('bulletList') ? 'is-active' : ''}
                 >
                     Bullet list
-                </button>
-                <button
+                </_ElementEditorButton>
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleOrderedList().run()}
                     className={editor.isActive('orderedList') ? 'is-active' : ''}
                 >
                     Ordered list
-                </button>
-                <button
+                </_ElementEditorButton>
+                {/* <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleCodeBlock().run()}
                     className={editor.isActive('codeBlock') ? 'is-active' : ''}
                 >
                     Code block
-                </button>
-                <button
+                </_ElementEditorButton> */}
+                {/* <_ElementEditorButton
                     onClick={() => editor.chain().focus().toggleBlockquote().run()}
                     className={editor.isActive('blockquote') ? 'is-active' : ''}
                 >
                     Blockquote
-                </button>
-                <button onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+                </_ElementEditorButton> */}
+                {/* <_ElementEditorButton onClick={() => editor.chain().focus().setHorizontalRule().run()}>
                     Horizontal rule
-                </button>
-                <button onClick={() => editor.chain().focus().setHardBreak().run()}>
+                </_ElementEditorButton> */}
+                {/* <_ElementEditorButton onClick={() => editor.chain().focus().setHardBreak().run()}>
                     Hard break
-                </button>
-                <button
+                </_ElementEditorButton> */}
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().undo().run()}
                     disabled={
                         !editor.can()
@@ -179,8 +261,8 @@ const MenuBar = ({ editor }: any) => {
                     }
                 >
                     Undo
-                </button>
-                <button
+                </_ElementEditorButton>
+                <_ElementEditorButton
                     onClick={() => editor.chain().focus().redo().run()}
                     disabled={
                         !editor.can()
@@ -191,13 +273,13 @@ const MenuBar = ({ editor }: any) => {
                     }
                 >
                     Redo
-                </button>
-                <button
+                </_ElementEditorButton>
+                {/* <_ElementEditorButton
                     onClick={() => editor.chain().focus().setColor('#958DF1').run()}
                     className={editor.isActive('textStyle', { color: '#958DF1' }) ? 'is-active' : ''}
                 >
                     Purple
-                </button>
+                </_ElementEditorButton> */}
             </div>
         </div>
     )
@@ -208,13 +290,19 @@ const MenuBar = ({ editor }: any) => {
 export class Thread {
     _threadData: type_thread | undefined = undefined;
     _threadId: string = "";
-    _addingPost: boolean = false;
+    _state: "view" | "adding-post" = "view";
+    _editor: Editor | null = null;
+
     constructor() {
+        window.addEventListener('beforeunload', (event: any) => {
+            if (this.getState() !== "view") {
+                event.preventDefault();
+            }
+        });
     }
 
 
     _ElementThread = () => {
-        const location = useLocation();
 
         const threadData = this.getThreadData();
         console.log(threadData)
@@ -362,25 +450,25 @@ export class Thread {
     }
 
 
-    _ElementPublishPostButton = ({ text }: { text: string }) => {
+    _ElementPublishPostButton = ({ text, setText, editor }: { text: string, setText: any, editor: Editor }) => {
         const navigate = useNavigate();
         const elementRef = React.useRef<any>(null);
+
         return (
             <div
                 ref={elementRef}
                 onClick={async () => {
+
+                    const confirmed = window.confirm("Do you want to publish the post?");
+                    if (confirmed === false) {
+                        return;
+                    }
+
+
+                    this.setState("view");
                     // write to server
-
-
-                    // extract image from string
-                    // upload image
-                    // update text with new link
-                    // const rawHtml = editor.getHTML();
                     const cleanText = await this.replaceBase64WithUrls(text);
-                    console.log(cleanText)
 
-                    // Now send `cleanHtml` to your backend
-                    console.log('Ready to publish:', cleanText);
 
                     const postData: type_post = {
                         title: "",
@@ -402,6 +490,7 @@ export class Thread {
                     const data = await response.json();
                     const result = data["result"];
                     if (result === true) {
+                        console.log("step 2")
                         // refresh page
                         fetch("/thread", {
                             method: "POST",
@@ -412,10 +501,12 @@ export class Thread {
                         })
                             .then(
                                 (res) => {
+                                    console.log("step 3")
                                     return res.json()
                                 }
                             ).then(data => {
-                                this.setIsAddingPost(false);
+                                setText("");
+                                editor.commands.setContent("");
                                 this.setThreadData(this.getThreadId(), data.result);
                                 const url = `/thread?${new URLSearchParams({ id: this.getThreadId() })}`;
                                 navigate(url);
@@ -455,19 +546,24 @@ export class Thread {
     }
 
 
-    _ElementCancelPostButton = () => {
+    _ElementCancelPostButton = ({ setText, editor }: { setText: any, editor: Editor }) => {
         const navigate = useNavigate();
         const elementRef = React.useRef<any>(null);
         return (
             <div
                 ref={elementRef}
                 onClick={async () => {
-                    this.setIsAddingPost(false);
+                    const confirmed = window.confirm("Do you want to cancel this post?");
+                    if (confirmed === false) {
+                        return;
+                    }
+                    setText("");
+                    editor.commands.setContent("");
+                    this.setState("view");
                     const url = `/thread?id=${this.getThreadId()}`;
                     navigate(url)
-
-
                 }}
+
                 style={{
                     display: "inline-flex",
                     padding: 5,
@@ -503,7 +599,9 @@ export class Thread {
             <div
                 ref={elementRef}
                 onClick={async () => {
-                    this.setIsAddingPost(true);
+                    // this.setState("adding-post");
+                    // in transition, waiting for approval
+                    this.setState("adding-post");
                     const url = `/thread?id=${this.getThreadId()}`;
                     navigate(url)
                 }}
@@ -540,18 +638,18 @@ export class Thread {
         const [text, setText] = useState('<p>Hello World</p>');
 
         const editor = useEditor({
-            extensions: [StarterKit, Image, Figure, ImageResize],
-            // content: '      <p>Resize the image below:</p>      <img src="https://picsum.photos/536/354" />',
-            content: "zhubobofu",
+            extensions: [StarterKit, Image, Figure, ImageResize, CustomImage],
+            content: "",
             onUpdate({ editor }) {
                 setText(editor.getHTML());
             },
-
         });
 
         if (!editor) {
             return <p>Loading editor...</p>;
         }
+        this._editor = editor;
+
         useEffect(() => {
             if (!editor) return;
 
@@ -574,7 +672,8 @@ export class Thread {
                         .insertContent({
                             type: 'image',
                             attrs: {
-                                src,
+                                src: src,
+                                style: 'width: 300px; height: auto;',
                             },
                         })
                         .run();
@@ -591,26 +690,32 @@ export class Thread {
         }, [editor]);
 
 
-        if (this.isAddingPost()) {
+        if (this.getState() === "adding-post") {
 
             return (
-                <>
+                <div style={{
+                    marginBottom: 100,
+                }}>
                     <MenuBar editor={editor}></MenuBar>
 
-                    <EditorContent editor={editor} />
+                    <EditorContent editor={editor} className="my-editor" />
                     <div style={{
                         display: "inline-flex",
                         flexDirection: "row",
                     }}>
                         {/* Post button */}
-                        <this._ElementPublishPostButton text={text}></this._ElementPublishPostButton>
-                        <this._ElementCancelPostButton></this._ElementCancelPostButton>
+                        <this._ElementPublishPostButton text={text} setText={setText} editor={editor}></this._ElementPublishPostButton>
+                        <this._ElementCancelPostButton setText={setText} editor={editor}></this._ElementCancelPostButton>
                     </div>
-                </>
+                </div>
             );
         } else {
             return (
-                <this._ElementAddPostButton></this._ElementAddPostButton>
+                <div style={{
+                    marginBottom: 100,
+                }}>
+                    <this._ElementAddPostButton></this._ElementAddPostButton>
+                </div>
             )
         }
 
@@ -655,9 +760,6 @@ export class Thread {
         return html;
     }
 
-
-
-
     getThreadData = () => {
         return this._threadData;
     }
@@ -675,12 +777,34 @@ export class Thread {
         return <this._ElementThread></this._ElementThread>
     }
 
-    isAddingPost = () => {
-        return this._addingPost;
+    // isAddingPost = () => {
+    //     return this._addingPost;
+    // }
+
+    // setIsAddingPost = (newState: boolean) => {
+    //     this._addingPost = newState;
+    // }
+
+    // setIsPublisingPost = (newState: boolean) => {
+    //     this._publishingPost = newState;
+    // }
+
+    // isPublishingPost = () => {
+    //     return this._publishingPost;
+    // }
+
+    getState = () => {
+        return this._state;
     }
 
-    setIsAddingPost = (newState: boolean) => {
-        this._addingPost = newState;
+
+
+    setState = (newState: "view" | "adding-post") => {
+        this._state = newState;
+    }
+
+    getEditor = () => {
+        return this._editor;
     }
 
 }

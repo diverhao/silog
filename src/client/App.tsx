@@ -12,6 +12,9 @@ import {
     useNavigate,
     useLocation,
     Navigate,
+    useBlocker,
+    createBrowserRouter,
+    RouterProvider,
 } from 'react-router-dom';
 import { nanoid } from 'nanoid';
 import { Thread } from './Thread';
@@ -56,6 +59,7 @@ export type type_thread = type_post[];
  */
 export type type_threads = Record<string, type_thread>;
 
+
 export class App {
 
     topicsStr = "";
@@ -67,31 +71,50 @@ export class App {
         this._searchBar = new SearchBar(this);
     }
 
-
     _Element = () => {
 
-        return (
 
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/" element={<this.Layout />}>
-                        {/* <Route index element={<div> Home</div>} />  */}
-                        {/* <Route index element={<Navigate to="/search?timeRange=0+3751917376000"></Navigate>} />  */}
-                        <Route index element={<this._ElementThreadsWrapper></this._ElementThreadsWrapper>}></Route>
-                        <Route path="search" element={<this._ElementThreadsWrapper></this._ElementThreadsWrapper>}></Route>
-                        <Route path="thread" element={<this._ElementThreadWrapper></this._ElementThreadWrapper>}></Route>
-                    </Route>
-                </Routes>
-            </BrowserRouter>
-        );
+        const router = createBrowserRouter([
+            {
+                path: '/',
+                element: <this.Layout />,
+                children: [
+                    {
+                        index: true,
+                        element: <this._ElementThreadsWrapper />,
+                    },
+                    {
+                        path: 'search',
+                        element: <this._ElementThreadsWrapper />,
+                    },
+                    {
+                        path: 'thread',
+                        element: <this._ElementThreadWrapper />,
+                    },
+
+                ],
+            },
+        ]);
+        return (
+            <RouterProvider router={router} />
+        )
     }
 
     Layout = () => {
         const navigate = useNavigate();
+
         React.useEffect(() => {
 
             const searchQuery: Record<string, any> = {};
             searchQuery["timeRange"] = [0, 3751917376000];
+
+            if (this.getThread().getState() === "adding-post") {
+                const confirmed = window.confirm("Do you want to disgard the post?");
+                if (confirmed === false) {
+                    return;
+                }
+                this.getThread().setState("view");
+            }
 
 
             if (window.location.pathname === "/thread") {
@@ -147,6 +170,7 @@ export class App {
                         searchQuery["authors"] = authorsStr.trim().split(" ");
                     }
                 }
+
 
                 fetch("/search", {
                     method: "POST",
@@ -227,6 +251,15 @@ export class App {
                                 searchQuery["authors"] = this.getSearchBar().authors;
                             }
 
+                            if (this.getThread().getState() === "adding-post") {
+                                const confirmed = window.confirm("Do you want to disgard the post?");
+                                if (confirmed === false) {
+                                    return;
+                                }
+                                this.getThread().setState("view");
+                            }
+
+
                             fetch("/search", {
                                 method: "POST",
                                 headers: {
@@ -305,6 +338,14 @@ export class App {
                 <div
                     ref={elementRef}
                     onClick={async (event: any) => {
+                        if (this.getThread().getState() === "adding-post") {
+                            const confirmed = window.confirm("Do you want to disgard the post?");
+                            if (confirmed === false) {
+                                return;
+                            }
+                            this.getThread().setState("view");
+                        }
+
                         this.getThread().setThreadData(threadId, threadData);
                         const url = `/thread?${new URLSearchParams({ id: threadId })}`;
                         navigate(url, { state: nanoid() })
@@ -430,6 +471,7 @@ export class App {
 
     _ElementThreadWrapper = () => {
         const location = useLocation();
+
         return this.getThread().getElement();
     }
 

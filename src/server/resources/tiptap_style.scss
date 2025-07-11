@@ -89,3 +89,22 @@
     margin: 2rem 0;
   }
 }
+
+.my-editor {
+//   padding: 16px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  min-height: 200px;
+  background-color: #fefefe;
+  color: #333;
+  font-family: 'Inter', sans-serif;
+}
+.ProseMirror {
+  min-height: 200px;
+  padding: 16px;
+  border: none;
+  outline: none;
+  line-height: 1.5;
+}
