@@ -8,12 +8,25 @@ import 'react-calendar/dist/Calendar.css'; // import default styles
 import '../server/resources/Calendar.css'; // import default styles
 import { Value } from "react-calendar/dist/shared/types";
 import { nanoid } from 'nanoid';
+import { convertSearchQueryToUrl, doSearch, farFuture } from "./Shared";
 
 export class SearchBar {
     private _app: App;
-    authors: string[] = [];
-    keywords: string[] = [];
-    timeRange: [number, number] = [0, 3751917376000];
+    // search query
+    // author: string = "";
+    // topic: string = "";
+    // keywords: string[] = [];
+    // timeRange: [number, number] = [0, farFuture];
+
+    _searchQuery: type_search_query = {
+        author: "",
+        topic: "",
+        keywords: [],
+        timeRange: [0, farFuture],
+        startingCount: 0,
+        count: 50,
+    };
+
     setShowCalendarStartTime = (show: boolean) => { };
     setShowCalendarEndTime = (show: boolean) => { };
     forceUpdate = (input: any) => { };
@@ -27,7 +40,7 @@ export class SearchBar {
     }
 
 
-    _ElementAuthors = () => {
+    _ElementAuthor = () => {
         const [authorsStr, setAuthorsStr] = React.useState("");
         return (
             <form onSubmit={(event: any) => {
@@ -38,7 +51,7 @@ export class SearchBar {
                     onChange={(event: any) => {
                         setAuthorsStr(event.target.value);
                         // this.authorsStr = event.target.value;
-                        this.authors = event.target.value.trim().split(" ");
+                        this.getSearchQuery().author = event.target.value;
                     }}
                 >
                 </input>
@@ -47,12 +60,26 @@ export class SearchBar {
     }
 
     _ElementKeywords = () => {
-        // const [keywordsStr, setKeywordsStr] = React.useState("");
-        // this.setKeywordsStr = setKeywordsStr;
+        const navigate = useNavigate();
         const [, forceUpdate] = React.useState({});
         return (
-            <form onSubmit={(event: any) => {
+            <form onSubmit={async (event: any) => {
                 event.preventDefault();
+
+                const searchQuery = this.getSearchQuery();
+
+
+                if (this.getApp().getThread().getState() === "adding-post" || this.getApp().getThread().getState() === "adding-thread") {
+                    const confirmed = window.confirm("Do you want to disgard the post?");
+                    if (confirmed === false) {
+                        return;
+                    }
+                    this.getApp().getThread().setState("view");
+                }
+                const data = await doSearch(searchQuery);
+                this.getApp().setThreadsData(data.result);
+                const url = convertSearchQueryToUrl(searchQuery);
+                navigate(url);
             }}
                 style={{
                     width: "100%",
@@ -80,9 +107,9 @@ export class SearchBar {
                         // setKeywordsStr(event.target.value);
                         // this.keywordsStr = event.target.value;
                         if (event.target.value.trim() === "") {
-                            this.keywords = [];
+                            this.getSearchQuery()["keywords"] = [];
                         } else {
-                            this.keywords = event.target.value.trim().split(" ");
+                            this.getSearchQuery()["keywords"] = event.target.value.trim().split(" ");
                         }
                         this.forceUpdate({});
                     }}
@@ -131,49 +158,16 @@ export class SearchBar {
                 }}
                 onClick={async (event: any) => {
                     event.preventDefault();
-
-                    const searchQuery: Record<string, any> = {
-                        timeRange: this.timeRange,
-                        authors: this.authors,
-                        keywords: this.keywords,
-                        // topics: [],
-                        // startingCount: 0,
-                        // count: 50,
-                    }
-
-                    const searchQueryStr: Record<string, any> = {
-                        timeRange: searchQuery["timeRange"].join(" ").trim(),
-                    }
-                    if (searchQuery["authors"].length > 0) {
-                        searchQueryStr["authors"] = searchQuery["authors"].join(" ").trim();
-                    }
-                    if (searchQuery["keywords"].length > 0) {
-                        searchQueryStr["keywords"] = searchQuery["keywords"].join(" ").trim();
-                    }
-
-
-                    if (this.getApp().getThread().getState() === "adding-post" || this.getApp().getThread().getState() === "adding-thread" ) {
+                    if (this.getApp().getThread().getState() === "adding-post" || this.getApp().getThread().getState() === "adding-thread") {
                         const confirmed = window.confirm("Do you want to disgard the post?");
                         if (confirmed === false) {
                             return;
                         }
                         this.getApp().getThread().setState("view");
                     }
-
-                    const response = await fetch("/search",
-
-                        {
-                            method: "POST",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(searchQuery),
-                        }
-                    )
-                    const data = await response.json();
-                    this.getApp().setThreadsData(data.result);
-                    const url = `/search?${new URLSearchParams(searchQueryStr)}`;
-                    navigate(url, { state: nanoid() });
+                    const searchQuery = this.getSearchQuery();
+                    const url = convertSearchQueryToUrl(searchQuery);
+                    navigate(url);
                 }}
             >
                 &#128269;
@@ -213,7 +207,7 @@ export class SearchBar {
                     display: "inline-flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    color: isStartTime ? this.timeRange[0] === 0 ? "rgba(150, 150, 150, 1)" : "" : this.timeRange[1] === 3751917376000 ? "rgba(150, 150, 150, 1)" : "",
+                    color: isStartTime ? this.getSearchQuery().timeRange[0] === 0 ? "rgba(150, 150, 150, 1)" : "" : this.getSearchQuery().timeRange[1] === farFuture ? "rgba(150, 150, 150, 1)" : "",
                 }}
                     onMouseDown={(event: any) => {
                         event?.stopPropagation();
@@ -226,7 +220,7 @@ export class SearchBar {
 
                     }}
                 >
-                    {isStartTime ? this.timeRange[0] === 0 ? "any time" : this.convertTime(this.timeRange[0]) : this.timeRange[1] === 3751917376000 ? "any time" : this.convertTime(this.timeRange[1])}
+                    {isStartTime ? this.getSearchQuery().timeRange[0] === 0 ? "any time" : this.convertTime(this.getSearchQuery().timeRange[0]) : this.getSearchQuery().timeRange[1] === farFuture ? "any time" : this.convertTime(this.getSearchQuery().timeRange[1])}
                 </div>
                 <this._ElementCalendar
                     showCalendar={showCalendar}
@@ -240,11 +234,11 @@ export class SearchBar {
     }
 
     obtainCalenderDate = (isStartTime: boolean) => {
-        return isStartTime ? this.timeRange[0] === 0 ? new Date() : new Date(this.timeRange[0]) : this.timeRange[1] === 3751917376000 ? new Date() : new Date(this.timeRange[1]);
+        return isStartTime ? this.getSearchQuery().timeRange[0] === 0 ? new Date() : new Date(this.getSearchQuery().timeRange[0]) : this.getSearchQuery().timeRange[1] === farFuture ? new Date() : new Date(this.getSearchQuery().timeRange[1]);
     }
 
     obtainKeywords = () => {
-        return this.keywords.length === 0 ? "" : this.keywords.join(" ");
+        return this.getSearchQuery().keywords.length === 0 ? "" : this.getSearchQuery().keywords.join(" ");
     }
 
     _ElementCalendar = ({ showCalendar, setShowCalendar, forceUpdate, isStartTime }: any) => {
@@ -275,10 +269,10 @@ export class SearchBar {
                             // setDate(newDate);
                             if (isStartTime) {
                                 newDate.setHours(0, 0, 0, 0); // 00:00:00.000
-                                this.timeRange[0] = newDate.getTime();
+                                this.getSearchQuery().timeRange[0] = newDate.getTime();
                             } else {
                                 newDate.setHours(23, 59, 59, 999); // 23:59:59.999
-                                this.timeRange[1] = newDate.getTime();
+                                this.getSearchQuery().timeRange[1] = newDate.getTime();
                             }
                             forceUpdate({})
                         } else {
@@ -321,9 +315,9 @@ export class SearchBar {
                     ref={elementClearButton}
                     onMouseDown={() => {
                         if (isStartTime) {
-                            this.timeRange[0] = 0;
+                            this.getSearchQuery().timeRange[0] = 0;
                         } else {
-                            this.timeRange[1] = 3751917376000;
+                            this.getSearchQuery().timeRange[1] = farFuture;
                         }
                         setShowCalendar(false);
 
@@ -428,6 +422,20 @@ export class SearchBar {
         const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    getSearchQuery = () => {
+        return this._searchQuery;
+    }
+
+    resetSearchQuery = () => {
+        const searchQuery = this.getSearchQuery();
+        searchQuery["author"] = "";
+        searchQuery["topic"] = "";
+        searchQuery["keywords"] = [];
+        searchQuery["timeRange"] = [0, farFuture];
+        searchQuery["startingCount"] = 0;
+        searchQuery["count"] = 50;
     }
 
 }

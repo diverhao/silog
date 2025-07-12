@@ -13,12 +13,8 @@ export type type_post = {
     title: string,
     author: string,
     time: number, // ms since epoch, time of post
-    keywords: string[],
-    // id: string, // uuid
-    // subId: number, // 0 means it is the first post in a thread, 1 means the first follow-up post in a thread
     text: string,
     topics: type_topic[], // could be multiple system, vacuum, cryo, admin, control, magnet, ...
-    attachments: string[], // any type file, e.g. pic, txt, others, located in the month folder
 }
 
 /**
@@ -38,9 +34,9 @@ export type type_db = Record<string, type_month>;
 
 export type type_search_query = {
     timeRange: [number, number], // time range
-    authors: string[], // match author, if [], match any author
+    author: string, // match author, if [], match any author
     keywords: string[], // match title and text, if [], match any text
-    topics: string[], // match topics, e.g. cryo, magnet, operation, if [], match any topic
+    topic: string, // match topics, e.g. cryo, magnet, operation, if [], match any topic
     startingCount: number, // from which match should I return, e.g. 0, or 50
     count: number, // number of matches we want for this query, e.g. 50
 }
@@ -59,12 +55,6 @@ export class DbData {
     }
 
 
-    // never delete a post/thread
-    // automatically create month entry
-
-    /**
-     * AND
-     */
     searchThreads = (searchQuery: type_search_query) => {
         const t0 = performance.now();
         const result: Record<string, type_thread> = {};
@@ -76,80 +66,89 @@ export class DbData {
             searchQuery["count"] = 100;
         }
 
-        // go over all months
-        for (const [monthStr, month] of Object.entries(this.getDb())) {
+        // go over all months, in reverse order
+        for (const [monthStr, month] of Object.entries(this.getDb()).reverse()) {
             const [monthStartTime, monthEndTime] = this.getMonthTimeRange(monthStr);
             // this month is out of time range
-            // console.log(monthStartTime, tStart, tEnd, monthStr)
             if (monthStartTime > tEnd || monthEndTime < tStart) {
                 continue;
             }
 
-            for (const [threadId, thread] of Object.entries(month)) {
+            // in reverse order
+            for (const [threadId, thread] of Object.entries(month).reverse()) {
                 let threadMatched: boolean = false;
+                // the main post is the first post
+                let postIndex = -1;
                 for (const post of thread) {
+                    postIndex++;
                     const postTime = post["time"];
                     const postAuthor = post["author"];
                     const postText = post["text"];
                     const postTitle = post["title"];
                     const postTopics = post["topics"];
                     let timeMatched = false;
-                    let authorsMatched = false;
+                    let authorMatched = false;
+                    let topicMatched = false;
                     let keywordsMatched = false;
-                    let topicsMatched = false;
 
                     // match time
+                    // must come with a time
                     if (postTime > tStart && postTime < tEnd) {
                         timeMatched = true;
                     }
 
-                    // match author, OR
-                    if (searchQuery["authors"].length === 0) {
-                        authorsMatched = true;
-                    } else if (searchQuery["authors"].includes(postAuthor)) {
-                        authorsMatched = true;
+                    // match author, exact match
+                    // the explicit author search is usually done by clicking the author link
+                    if (searchQuery["author"].length === 0) {
+                        authorMatched = true;
+                    } else if (searchQuery["author"] === postAuthor) {
+                        authorMatched = true;
                     }
 
-                    // match topics, AND
-                    if (searchQuery["topics"].length === 0) {
-                        topicsMatched = true;
+                    if (postIndex === 0) {
+                        // match the main post's topic
+                        if (searchQuery["topic"].length === 0) {
+                            topicMatched = true;
+                        } else if (postTopics.includes(searchQuery["topic"] as any)) {
+                            topicMatched = true;
+                        }
                     } else {
-                        topicsMatched = true;
-                        for (const topic of searchQuery["topics"]) {
-                            if (!postTopics.includes(topic as any)) {
-                                topicsMatched = false;
-                                break;
-                            }
+                        if (searchQuery["topic"].length === 0) {
+                            topicMatched = true;
                         }
                     }
 
-                    // match keywords, AND
                     if (searchQuery["keywords"].length === 0) {
                         keywordsMatched = true;
                     } else {
-                        keywordsMatched = true;
+                        // title, text, author, topic that match any of the keyword
                         for (const keyword of searchQuery["keywords"]) {
-                            if (!postTitle.includes(keyword) && !postText.includes(keyword)) {
-                                keywordsMatched = false;
+                            if (postTitle.includes(keyword) || postText.includes(keyword) || postAuthor.includes(keyword) || postTopics.includes(keyword as any)) {
+                                keywordsMatched = true;
                                 break;
                             }
                         }
                     }
 
-                    // console.log(timeMatched, authorsMatched, keywordsMatched, topicsMatched)
+                    console.log(timeMatched, authorMatched, keywordsMatched, topicMatched)
 
                     // this Post matches, no need to further search
-                    if (timeMatched && authorsMatched && keywordsMatched && topicsMatched) {
+                    if (timeMatched && authorMatched && topicMatched && keywordsMatched) {
                         threadMatched = true;
                         break;
                     }
-
                 }
 
                 if (threadMatched) {
-                    // console.log("aaa", matchCount)
                     if (matchCount >= searchQuery["startingCount"] && matchCount < searchQuery["startingCount"] + searchQuery["count"]) {
-                        result[threadId] = thread;
+                        // result[threadId] = thread;
+                        const mainPost = thread[0];
+                        result[threadId] = [
+                            {
+                                ...mainPost,
+                                text: "",
+                            }
+                        ];
                     }
                     matchCount++;
                     if (matchCount >= searchQuery["startingCount"] + searchQuery["count"]) {
@@ -165,11 +164,14 @@ export class DbData {
         return result;
     }
 
-    getMonthTimeRange = (monthStr: string): [number, number] => {
-        const start = new Date(`${monthStr}-01T00:00:00.000Z`).getTime();
-        const [year, month] = monthStr.split('-').map(Number);
-        const end = new Date(Date.UTC(year, month, 1) - 1).getTime();
-        return [start, end];
+    searchThread = (threadId: string) => {
+        for (const [, month] of Object.entries(this.getDb()).reverse()) {
+            const thread = month[threadId];
+            if (thread !== undefined) {
+                return thread;
+            }
+        }
+        return undefined;
     }
 
     addThread = (newPost: type_post) => {
@@ -185,14 +187,14 @@ export class DbData {
         const newThread: type_thread = [newPost];
         const newThreadId = uuid();
         month[newThreadId] = newThread;
-        console.log("new thread", newThread)
+        // console.log("new thread", newThread)
         return newThreadId;
     }
 
     addFollowUpPost = (newFollowUpPost: type_post, threadId: string) => {
         // find the main post object
-        console.log("add follow up post:", newFollowUpPost);
-        const thread = this.getThread(threadId);
+        // console.log("add follow up post:", newFollowUpPost);
+        const thread = this.searchThread(threadId);
         if (thread === undefined) {
             // todo: 
             console.log("Thread", threadId, "not found");
@@ -204,7 +206,6 @@ export class DbData {
             return true;
         }
     }
-
 
     private addNewMonth = (newMonthStr: string) => {
         const newMonth: type_month = {};
@@ -257,14 +258,14 @@ export class DbData {
         return this.getDb()[monthStr];
     }
 
-    getThread = (threadId: string) => {
-        for (const [, month] of Object.entries(this.getDb())) {
-            const thread = month[threadId];
-            if (thread !== undefined) {
-                return thread;
-            }
-        }
-        return undefined;
+
+    getMonthTimeRange = (monthStr: string): [number, number] => {
+        const start = new Date(`${monthStr}-01T00:00:00.000Z`).getTime();
+        const [year, month] = monthStr.split('-').map(Number);
+        const end = new Date(Date.UTC(year, month, 1) - 1).getTime();
+        return [start, end];
     }
+
+
 
 }

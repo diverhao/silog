@@ -1,6 +1,6 @@
 import React, { Children, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
-import { type_post, type_thread } from "./App";
+import { App, type_post, type_thread } from "./App";
 
 import "../server/resources/tiptap_style.scss";
 
@@ -15,6 +15,7 @@ import { useEditor, Editor, EditorContent } from '@tiptap/react';
 import Figure from 'tiptap-extension-figure';
 import Image from '@tiptap/extension-image';
 import { ImageResize } from './ImageResize';
+import { convertSearchQueryToUrl, getTimeStr } from './Shared';
 // import { useBlocker } from 'react-router-dom';
 
 const CustomImage = Image.extend({
@@ -67,13 +68,10 @@ const MenuBar = ({ editor }: any) => {
 
                 <_ElementEditorButton
                     onClick={() => {
-                        console.log("trying to insert a fig")
                         const input = document.createElement('input');
                         input.type = 'file';
                         input.accept = 'image/*'; // Only allow image files
-                        console.log("step  2")
                         input.onchange = () => {
-                            console.log("step  3")
                             const file = input.files?.[0];
                             if (!file) return;
 
@@ -81,7 +79,6 @@ const MenuBar = ({ editor }: any) => {
 
                             reader.onload = () => {
                                 const src = reader.result as string;
-                                console.log("Base64 string:", src);
                                 editor
                                     .chain()
                                     .focus()
@@ -288,12 +285,14 @@ const MenuBar = ({ editor }: any) => {
 
 
 export class Thread {
-    _threadData: type_thread | undefined = undefined;
+    _threadData: type_thread = [];
     _threadId: string = "";
     _state: "view" | "adding-post" | "adding-thread" = "view";
     _editor: Editor | null = null;
+    _app: App;
 
-    constructor() {
+    constructor(app: App) {
+        this._app = app;
         window.addEventListener('beforeunload', (event: any) => {
             if (this.getState() !== "view") {
                 event.preventDefault();
@@ -303,18 +302,51 @@ export class Thread {
 
 
     _ElementThread = () => {
+        const [, forceUpdate] = React.useState({});
+
+        const location = useLocation();
+
+        const params = new URLSearchParams(location.search)
+        const threadId = params.get('id');
+        const state = params.get("state");
+
+
+        React.useEffect(() => {
+
+            if (this.getState() === "adding-thread") {
+                // thread ID is changed. However, we don't want to fetch because there is 
+                // no such data on server
+                return;
+            }
+
+            if (threadId === null) {
+                return;
+            }
+
+
+            // const threadId = this.getThreadId();
+            fetch("/thread", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ threadId: threadId }),
+            })
+                .then(
+                    (res) => {
+                        return res.json()
+                    }
+                ).then(data => {
+                    this.setThreadData(threadId, data.result);
+                    forceUpdate({});
+                })
+        }, [threadId, state])
 
         const threadData = this.getThreadData();
-        console.log(threadData)
         if (threadData === undefined) {
             return <div>thread empty</div>;
         }
         const mainPostData = threadData[0];
-        // const title = mainPostData["title"];
-        // const author = mainPostData["author"];
-        // const time = mainPostData["time"];
-        // const text = mainPostData["text"];
-        // const topics = mainPostData["topics"];
 
         if (mainPostData === undefined) {
             // new thread
@@ -412,11 +444,23 @@ export class Thread {
 
     _ElementPostTopic = ({ topic }: { topic: string }) => {
         const elementRef = React.useRef<any>(null);
+        const navigate = useNavigate();
         return (
             <div
                 ref={elementRef}
                 onClick={() => {
-                    // todo
+                    if (this.getState() === "adding-post" || this.getState() === "adding-thread") {
+                        const confirmed = window.confirm("Do you want to disgard the post?");
+                        if (confirmed === false) {
+                            return;
+                        }
+                        this.setState("view");
+                    }
+                    const searchQuery = this.getApp().getSearchBar().getSearchQuery();
+                    searchQuery["topic"] = topic;
+                    const url = convertSearchQueryToUrl(searchQuery);
+                    navigate(url)
+
                 }}
                 style={{
                     display: "inline-flex",
@@ -458,7 +502,7 @@ export class Thread {
                     onClick={() => {
                         // todo: search this author's all posts
                     }}
-                > {author} </span> at {new Date(time).toISOString()}
+                > {author} </span> at {getTimeStr(time)}
             </div>
         )
     }
@@ -494,10 +538,8 @@ export class Thread {
                         title: oldState === "adding-thread" ? title : "",
                         author: "",
                         time: 0,
-                        keywords: [],
                         text: cleanText,
                         topics: [],
-                        attachments: [],
                     };
 
                     const response = await fetch(oldState === "adding-post" ? "/follow-up-post" : "/new-thread", {
@@ -510,54 +552,8 @@ export class Thread {
                     const data = await response.json();
                     const result = data["result"];
                     const threadId = data["threadId"];
-                    if (result === true && threadId === this.getThreadId()) {
-                        console.log("step 2")
-                        // refresh page
-                        fetch("/thread", {
-                            method: "POST",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ threadId: this.getThreadId() }),
-                        })
-                            .then(
-                                (res) => {
-                                    console.log("step 3")
-                                    return res.json()
-                                }
-                            ).then(data => {
-                                setText("");
-                                editor.commands.setContent("");
-                                this.setThreadData(this.getThreadId(), data.result);
-                                const url = `/thread?${new URLSearchParams({ id: this.getThreadId() })}`;
-                                navigate(url);
-                            })
 
-                    } else if (result === true && threadId !== this.getThreadId()) {
-                        // new-thread POST, result === new thread Id
-                        fetch("/thread", {
-                            method: "POST",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ threadId: threadId }),
-                        })
-                            .then(
-                                (res) => {
-                                    console.log("step 3")
-                                    return res.json()
-                                }
-                            ).then(data => {
-                                setText("");
-                                editor.commands.setContent("");
-                                this.setThreadData(threadId, data.result);
-                                const url = `/thread?${new URLSearchParams({ id: threadId })}`;
-                                navigate(url);
-                            })
-                    } else {
-                        // todo:
-                    }
-
+                    navigate(`/thread?id=${threadId}`);
                 }}
                 style={{
                     display: "inline-flex",
@@ -606,7 +602,6 @@ export class Thread {
                         const url = `/thread?id=${this.getThreadId()}`;
                         navigate(url)
                     } else if (this.getState() === "adding-thread") {
-                        console.log("navigate to /")
                         this.setState("view");
                         const url = `/`;
                         navigate(url)
@@ -651,7 +646,7 @@ export class Thread {
                     // this.setState("adding-post");
                     // in transition, waiting for approval
                     this.setState("adding-post");
-                    const url = `/thread?id=${this.getThreadId()}`;
+                    const url = `/thread?id=${this.getThreadId()}&state=adding-post`;
                     navigate(url)
                 }}
                 style={{
@@ -811,7 +806,6 @@ export class Thread {
                 dom.removeEventListener('drop', handleDrop);
             };
         }, [editor]);
-        console.log("this.getState() = ", this.getState())
 
         if (this.getState() === "adding-post" || this.getState() === "adding-thread") {
 
@@ -914,6 +908,10 @@ export class Thread {
 
     getEditor = () => {
         return this._editor;
+    }
+
+    getApp = () => {
+        return this._app;
     }
 
 }

@@ -15,17 +15,19 @@ import {
     useBlocker,
     createBrowserRouter,
     RouterProvider,
+    useSearchParams,
 } from 'react-router-dom';
 import { nanoid } from 'nanoid';
 import { Thread } from './Thread';
 import { v4 as uuidv4 } from "uuid";
+import { doSearch, convertSearchQueryToUrl, getTimeStr, farFuture } from './Shared';
 
 
 export type type_search_query = {
     timeRange: [number, number], // time range
-    authors: string[], // match author, if [], match any author
+    author: string, // match author, if [], match any author
     keywords: string[], // match title and text, if [], match any text
-    topics: string[], // match topics, e.g. cryo, magnet, operation, if [], match any topic
+    topic: string, // match topics, e.g. cryo, magnet, operation, if [], match any topic
     startingCount: number, // from which match should I return, e.g. 0, or 50
     count: number, // number of matches we want for this query, e.g. 50
 }
@@ -42,12 +44,8 @@ export type type_post = {
     title: string,
     author: string,
     time: number, // ms since epoch, time of post
-    keywords: string[],
-    // id: string, // uuid
-    // subId: number, // 0 means it is the first post in a thread, 1 means the first follow-up post in a thread
     text: string,
     topics: type_topic[], // could be multiple system, vacuum, cryo, admin, control, magnet, ...
-    attachments: string[], // any type file, e.g. pic, txt, others, located in the month folder
 }
 
 /**
@@ -63,9 +61,8 @@ export type type_threads = Record<string, type_thread>;
 
 export class App {
 
-    topicsStr = "";
     _threadsData: type_threads = {};
-    _thread: Thread = new Thread();
+    _thread: Thread = new Thread(this);
     _searchBar: SearchBar;
 
     constructor() {
@@ -102,110 +99,6 @@ export class App {
     }
 
     Layout = () => {
-        const navigate = useNavigate();
-
-        React.useEffect(() => {
-
-            const searchQuery: Record<string, any> = {};
-            searchQuery["timeRange"] = [0, 3751917376000];
-
-            if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
-                const confirmed = window.confirm("Do you want to disgard the post?");
-                if (confirmed === false) {
-                    return;
-                }
-                this.getThread().setState("view");
-            }
-
-
-            if (window.location.pathname === "/thread") {
-                // "/thread" route
-                const params = new URLSearchParams(window.location.search);
-
-                const threadId = params.get('id');
-                if (threadId === null) {
-                    return;
-                }
-
-                fetch("/thread", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ threadId: threadId }),
-                })
-                    .then(
-                        (res) => {
-                            return res.json()
-                        }
-                    ).then(data => {
-                        this.getThread().setThreadData(threadId, data.result);
-                        const url = `/thread?${new URLSearchParams({ id: threadId })}`;
-                        navigate(url, { state: nanoid() });
-                    })
-            } else {
-                // "/search" or "/"
-                if (window.location.pathname === "/search") {
-                    const params = new URLSearchParams(window.location.search);
-
-                    const timeRangeStr = params.get('timeRange');
-                    const keywordsStr = params.get('keywords');
-                    const authorsStr = params.get('authors');
-
-                    if (timeRangeStr !== null) {
-                        const timeRangeStrArray = timeRangeStr.trim().split(" ");
-                        if (timeRangeStrArray.length === 2) {
-                            const tStart = parseInt(timeRangeStrArray[0]);
-                            const tEnd = parseInt(timeRangeStrArray[1]);
-                            if (!isNaN(tStart) && !isNaN(tEnd)) {
-                                searchQuery["timeRange"] = [Math.min(tStart, tEnd), Math.max(tStart, tEnd)];
-                            }
-                        }
-                    }
-
-                    if (keywordsStr !== null) {
-                        searchQuery["keywords"] = keywordsStr.trim().split(" ");
-                    }
-
-                    if (authorsStr !== null) {
-                        searchQuery["authors"] = authorsStr.trim().split(" ");
-                    }
-                }
-
-
-                fetch("/search", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(searchQuery),
-                })
-                    .then(
-                        (res) => {
-                            return res.json()
-                        }
-                    ).then(data => {
-
-                        this.setThreadsData(data.result);
-
-                        const searchQueryStr: Record<string, any> = {
-                            timeRange: searchQuery["timeRange"].join(" ").trim(),
-                        }
-                        if (searchQuery["authors"] !== undefined && searchQuery["authors"].length > 0) {
-                            searchQueryStr["authors"] = searchQuery["authors"].join(" ").trim();
-                        }
-                        if (searchQuery["keywords"] !== undefined && searchQuery["keywords"].length > 0) {
-                            searchQueryStr["keywords"] = searchQuery["keywords"].join(" ").trim();
-                        }
-                        if (window.location.pathname === "/search") {
-                            const url = `/search?${new URLSearchParams(searchQueryStr)}`;
-                            navigate(url, { state: nanoid() })
-                        } else {
-                            navigate("/", { state: nanoid() })
-                        }
-                    })
-            }
-        }, [])
 
         return (
             <div style={{
@@ -237,56 +130,10 @@ export class App {
                         width: 200,
                         cursor: "pointer",
                     }}
-                        onMouseDown={() => {
-
-                            const searchQuery: Record<string, any> = {};
-                            // searchQuery["timeRange"] = [0, 3751917376000];
-                            searchQuery["timeRange"] = this.getSearchBar().timeRange;
-
-                            if (this.getSearchBar().keywords.length > 0) {
-                                searchQuery["keywords"] = this.getSearchBar().keywords;
-                            }
-
-
-                            if (this.getSearchBar().authors.length > 0) {
-                                searchQuery["authors"] = this.getSearchBar().authors;
-                            }
-
-                            if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
-                                const confirmed = window.confirm("Do you want to disgard the post?");
-                                if (confirmed === false) {
-                                    return;
-                                }
-                                this.getThread().setState("view");
-                            }
-
-
-                            fetch("/search", {
-                                method: "POST",
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify(searchQuery),
-                            })
-                                .then(
-                                    (res) => {
-                                        return res.json()
-                                    }
-                                ).then(data => {
-
-                                    this.setThreadsData(data.result);
-
-                                    const searchQueryStr: Record<string, any> = {
-                                        timeRange: searchQuery["timeRange"].join(" ").trim(),
-                                    }
-                                    if (searchQuery["authors"] !== undefined && searchQuery["authors"].length > 0) {
-                                        searchQueryStr["authors"] = searchQuery["authors"].join(" ").trim();
-                                    }
-                                    if (searchQuery["keywords"] !== undefined && searchQuery["keywords"].length > 0) {
-                                        searchQueryStr["keywords"] = searchQuery["keywords"].join(" ").trim();
-                                    }
-                                    navigate("/", { state: nanoid() })
-                                })
+                        // the logo image: clear all search critia, search and go to "/"
+                        onMouseDown={async () => {
+                            this.getSearchBar().resetSearchQuery();
+                            navigate("/")
                         }}
                     ></img>
                     {this.getSearchBar().getElement()}
@@ -313,22 +160,10 @@ export class App {
             <div
                 ref={elementRef}
                 onClick={async () => {
-                    // this.setState("adding-post");
-                    // in transition, waiting for approval
                     this.getThread().setState("adding-thread");
                     const threadId = uuidv4();
-                    this.getThread().setThreadData(threadId, [
-                        // {
-                        //     title: "new title",
-                        //     author: "new author",
-                        //     time: 0,
-                        //     keywords: [],
-                        //     text: "new text",
-                        //     topics: [],
-                        //     attachments: [],
-                        // }
-                    ]);
-                    const url = `/thread?id=${threadId}`;
+                    this.getThread().setThreadData(threadId, []);
+                    const url = `/thread?id=${threadId}&state=adding-thread`;
                     navigate(url)
                 }}
                 style={{
@@ -341,6 +176,9 @@ export class App {
                     marginRight: 10,
                     borderRadius: 5,
                     transition: "background-color 0.2s ease",
+                    whiteSpace: "nowrap",
+                    justifyContent: "center",
+                    alignItems: "center",
                 }}
                 onMouseEnter={() => {
                     if (elementRef.current !== null) {
@@ -401,11 +239,11 @@ export class App {
                             }
                             this.getThread().setState("view");
                         }
-
-                        this.getThread().setThreadData(threadId, threadData);
+                        this.getThread().setThreadData(threadId, []);
                         const url = `/thread?${new URLSearchParams({ id: threadId })}`;
-                        navigate(url, { state: nanoid() })
+                        navigate(url);
                     }}
+
                     style={{
                         cursor: "pointer",
                         display: "inline-flex",
@@ -423,7 +261,7 @@ export class App {
                 >
                     {title}
                 </div>
-            </td>
+            </td >
         )
     }
 
@@ -438,30 +276,60 @@ export class App {
             }}>
                 <div
                     ref={elementRef}
-                    onClick={async (event: any) => {
-                        // todo:
-                        // this.setThreadData(threadData);
-                        // const url = `/thread?${new URLSearchParams({ id: threadId })}`;
-                        // navigate(url, { state: nanoid() })
-                    }}
                     style={{
                         cursor: "pointer",
                         display: "inline-flex",
-                    }}
-                    onMouseEnter={() => {
-                        if (elementRef.current !== null) {
-                            elementRef.current.style["color"] = "rgba(0, 121, 52, 1)";
-                        }
-                    }}
-                    onMouseLeave={() => {
-                        if (elementRef.current !== null) {
-                            elementRef.current.style["color"] = "rgba(0, 0, 0, 1)";
-                        }
+                        flexDirection: "row",
                     }}
                 >
-                    {topics}
+                    {topics.map((topic: string, index: number) => {
+                        return (
+                            <this._ElementThreadThumbnailTopic topic={topic} key={topic + `${index}`}></this._ElementThreadThumbnailTopic>
+                        )
+                    })}
                 </div>
             </td>
+        )
+    }
+
+    _ElementThreadThumbnailTopic = ({ topic }: { topic: string }) => {
+        const navigate = useNavigate();
+        const elementRef = React.useRef<any>(null);
+        return (
+            <div
+                ref={elementRef}
+                onClick={async (event: any) => {
+                    if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
+                        const confirmed = window.confirm("Do you want to disgard the post?");
+                        if (confirmed === false) {
+                            return;
+                        }
+                        this.getThread().setState("view");
+                    }
+                    const searchQuery = this.getSearchBar().getSearchQuery();
+                    searchQuery["topic"] = topic;
+                    const url = convertSearchQueryToUrl(searchQuery);
+                    navigate(url)
+
+                }}
+                style={{
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    marginRight: 8,
+                }}
+                onMouseEnter={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["color"] = "rgba(0, 121, 52, 1)";
+                    }
+                }}
+                onMouseLeave={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["color"] = "rgba(0, 0, 0, 1)";
+                    }
+                }}
+            >
+                {topic}
+            </div>
         )
     }
 
@@ -478,10 +346,18 @@ export class App {
                 <div
                     ref={elementRef}
                     onClick={async (event: any) => {
-                        // todo:
-                        // this.setThreadData(threadData);
-                        // const url = `/thread?${new URLSearchParams({ id: threadId })}`;
-                        // navigate(url, { state: nanoid() })
+                        if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
+                            const confirmed = window.confirm("Do you want to disgard the post?");
+                            if (confirmed === false) {
+                                return;
+                            }
+                            this.getThread().setState("view");
+                        }
+
+                        const searchQuery = this.getSearchBar().getSearchQuery();
+                        searchQuery["author"] = author;
+                        const url = convertSearchQueryToUrl(searchQuery);
+                        navigate(url)
                     }}
                     style={{
                         cursor: "pointer",
@@ -519,7 +395,7 @@ export class App {
                         display: "inline-flex",
                     }}
                 >
-                    {new Date(time).toISOString()}
+                    {getTimeStr(time)}
                 </div>
             </td>
         )
@@ -537,6 +413,68 @@ export class App {
     }
 
     _ElementThreads = () => {
+        const navigate = useNavigate();
+        const location = useLocation();
+
+        const params = new URLSearchParams(location.search)
+        const timeRangeStr = params.get('timeRange');
+        const authorStr = params.get('author');
+        const topicStr = params.get('topic');
+        const keywordsStr = params.get('keywords');
+        const [, forceUpdate] = React.useState({});
+
+        useEffect(() => {
+
+            if (location.pathname === "/") {
+                this.getSearchBar().resetSearchQuery();
+                const searchQuery = this.getSearchBar().getSearchQuery();
+                const url = convertSearchQueryToUrl(searchQuery);
+                navigate(url)
+            } else if (location.pathname === "/search") {
+                const searchQuery = this.getSearchBar().getSearchQuery();
+                if (timeRangeStr !== null) {
+                    const timeRangeStrArray = timeRangeStr.trim().split(" ");
+                    if (timeRangeStrArray.length === 2) {
+                        const tStart = parseInt(timeRangeStrArray[0]);
+                        const tEnd = parseInt(timeRangeStrArray[1]);
+                        if (!isNaN(tStart) && !isNaN(tEnd)) {
+                            searchQuery["timeRange"] = [Math.min(tStart, tEnd), Math.max(tStart, tEnd)];
+                        }
+                    }
+                } else {
+                    searchQuery["timeRange"] = [0, farFuture];
+                }
+
+                if (keywordsStr !== null) {
+                    searchQuery["keywords"] = keywordsStr.trim().split(" ");
+                } else {
+                    searchQuery["keywords"] = [];
+                }
+
+                if (topicStr !== null) {
+                    searchQuery["topic"] = topicStr.trim();
+                } else {
+                    searchQuery["topic"] = "";
+                }
+
+                if (authorStr !== null) {
+                    searchQuery["author"] = authorStr.trim();
+                } else {
+                    searchQuery["author"] = "";
+                }
+
+
+                doSearch(searchQuery).then((data: any) => {
+                    if (data !== undefined) {
+                        this.setThreadsData(data.result);
+                        const url = convertSearchQueryToUrl(searchQuery);
+                        forceUpdate({})
+                    }
+                })
+            }
+
+        }, [location.search, location.pathname]);
+
         return (
             <div style={{
                 paddingLeft: 50,
@@ -558,8 +496,6 @@ export class App {
         )
     }
 
-
-
     getElement = () => {
         return <this._Element></this._Element>
     }
@@ -579,6 +515,7 @@ export class App {
     getThread = () => {
         return this._thread;
     }
+
 }
 
 

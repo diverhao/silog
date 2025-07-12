@@ -34,10 +34,10 @@ export class HttpServer {
 
             let searchQuery: type_search_query = req.body;
             searchQuery = {
-                timeRange: searchQuery["timeRange"], // || [0, Date.now()],
-                authors: searchQuery["authors"] || [],
+                timeRange: searchQuery["timeRange"], // must come with a time range
+                author: searchQuery["author"] || "",
                 keywords: searchQuery["keywords"] || [],
-                topics: searchQuery["topics"] || [],
+                topic: searchQuery["topic"] || "",
                 startingCount: searchQuery["startingCount"] || 0,
                 count: searchQuery["count"] || 50,
             };
@@ -57,7 +57,7 @@ export class HttpServer {
             console.log("search Query raw", searchQuery)
             const threadId = searchQuery["threadId"];
 
-            const searchResult = this.getDbData().getThread(threadId);
+            const searchResult = this.getDbData().searchThread(threadId);
 
             res.json({
                 threadId: threadId,
