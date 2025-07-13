@@ -1,6 +1,6 @@
 import React, { Children, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
-import { App, type_post, type_thread } from "./App";
+import { allTopics, App, type_post, type_thread, type_topic } from "./App";
 
 import "../server/resources/tiptap_style.scss";
 
@@ -442,6 +442,61 @@ export class Thread {
         )
     }
 
+
+    _ElementNewPostTopics = ({ topics, setTopics }: { topics: type_topic[], setTopics: any }) => {
+
+        return (
+            <div style={{
+                display: "inline-flex",
+                flexDirection: "row",
+                marginBottom: 20,
+            }}>
+                {allTopics.map((topic: string, index: number) => {
+                    return (
+                        <this._ElementNewPostTopic key={topic + `${index}`} topic={topic} setTopics={setTopics}></this._ElementNewPostTopic>
+                    )
+                })}
+            </div>
+        )
+    }
+
+    _ElementNewPostTopic = ({ topic, setTopics }: { topic: string, setTopics: any }) => {
+        const elementRef = React.useRef<any>(null);
+        const [selected, setSelected] = React.useState(false);
+        return (
+            <div
+                ref={elementRef}
+                onClick={() => {
+                    if (selected) {
+                        // will be un-selected
+                        setTopics((oldTopics: any) => {
+                            return oldTopics.filter((item: any) => item !== topic);
+                        })
+                    } else {
+                        setTopics((oldTopics: any) => {
+                            return [...new Set([...oldTopics, topic])];
+                        })
+
+                    }
+                    setSelected(!selected);
+                }}
+                style={{
+                    display: "inline-flex",
+                    padding: 5,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                    backgroundColor: selected ? "rgba(0, 235, 0, 1)" : "rgba(235, 235, 235, 1)",
+                    cursor: "pointer",
+                    marginRight: 10,
+                    borderRadius: 5,
+                    transition: "background-color 0.2s ease",
+                }}
+            >
+                {topic}
+            </div>
+        )
+    }
+
     _ElementPostTopic = ({ topic }: { topic: string }) => {
         const elementRef = React.useRef<any>(null);
         const navigate = useNavigate();
@@ -449,12 +504,9 @@ export class Thread {
             <div
                 ref={elementRef}
                 onClick={() => {
-                    if (this.getState() === "adding-post" || this.getState() === "adding-thread") {
-                        const confirmed = window.confirm("Do you want to disgard the post?");
-                        if (confirmed === false) {
-                            return;
-                        }
-                        this.setState("view");
+                    const confirmToGo = this.confirmRouteAway("Do you want to disgard the post?");
+                    if (confirmToGo === false) {
+                        return;
                     }
                     const searchQuery = this.getApp().getSearchBar().getSearchQuery();
                     searchQuery["topic"] = topic;
@@ -515,7 +567,7 @@ export class Thread {
     }
 
 
-    _ElementPublishPostButton = ({ text, setText, editor, title }: { text: string, setText: any, editor: Editor, title: string }) => {
+    _ElementPublishPostButton = ({ text, setText, editor, title, topics }: { text: string, setText: any, editor: Editor, title: string, topics: type_topic[] }) => {
         const navigate = useNavigate();
         const elementRef = React.useRef<any>(null);
 
@@ -539,7 +591,7 @@ export class Thread {
                         author: "",
                         time: 0,
                         text: cleanText,
-                        topics: [],
+                        topics: oldState === "adding-thread" ? topics : [],
                     };
 
                     const response = await fetch(oldState === "adding-post" ? "/follow-up-post" : "/new-thread", {
@@ -643,8 +695,6 @@ export class Thread {
             <div
                 ref={elementRef}
                 onClick={async () => {
-                    // this.setState("adding-post");
-                    // in transition, waiting for approval
                     this.setState("adding-post");
                     const url = `/thread?id=${this.getThreadId()}&state=adding-post`;
                     navigate(url)
@@ -716,6 +766,7 @@ export class Thread {
     _ElementNewPost = () => {
         const [text, setText] = useState('<p>Hello World</p>');
         const [title, setTitle] = useState("");
+        const [topics, setTopics] = useState<type_topic[]>([]);
 
         const editor = useEditor({
             extensions: [StarterKit, Image, Figure, ImageResize, CustomImage],
@@ -814,6 +865,7 @@ export class Thread {
                     marginBottom: 100,
                 }}>
                     {this.getState() === "adding-thread" ? <this._ElementNewThreadTitle title={title} setTitle={setTitle}></this._ElementNewThreadTitle> : null}
+                    {this.getState() === "adding-thread" ? <this._ElementNewPostTopics topics={topics} setTopics={setTopics}></this._ElementNewPostTopics> : null}
 
                     <MenuBar editor={editor}></MenuBar>
 
@@ -823,7 +875,7 @@ export class Thread {
                         flexDirection: "row",
                     }}>
                         {/* Post button */}
-                        <this._ElementPublishPostButton text={text} setText={setText} editor={editor} title={title}></this._ElementPublishPostButton>
+                        <this._ElementPublishPostButton text={text} setText={setText} editor={editor} title={title} topics={topics}></this._ElementPublishPostButton>
                         <this._ElementCancelPostButton setText={setText} editor={editor}></this._ElementCancelPostButton>
                     </div>
                 </div>
@@ -839,6 +891,8 @@ export class Thread {
         }
 
     }
+
+
 
 
     extractBase64Images = (html: string) => {
@@ -912,6 +966,22 @@ export class Thread {
 
     getApp = () => {
         return this._app;
+    }
+
+    confirmRouteAway = (message: string) => {
+        if (this.getState() === "adding-post" || this.getState() === "adding-thread") {
+            const confirmed = window.confirm(message);
+            if (confirmed === false) {
+                // stop 
+            } else {
+                // continue
+                this.setState("view");
+            }
+            return confirmed;
+        } else {
+            // continue
+            return true;
+        }
     }
 
 }

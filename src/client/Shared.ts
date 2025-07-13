@@ -16,6 +16,9 @@ export const convertSearchQueryToUrl = (searchQuery: type_search_query) => {
     if (searchQuery["keywords"] !== undefined && searchQuery["keywords"].length > 0) {
         searchQueryStr["keywords"] = searchQuery["keywords"].join(" "); // use space to separate, shown as "+" in address bar
     }
+    if (searchQuery["startingCount"] !== undefined && searchQuery["startingCount"] !== 0) {
+        searchQueryStr["startingCount"] = `${searchQuery["startingCount"]}`; // use space to separate, shown as "+" in address bar
+    }
     return `/search?${new URLSearchParams(searchQueryStr)}`;
 
 }
@@ -49,6 +52,16 @@ export const doSearch = async (searchQuery: type_search_query) => {
         console.log(e);
         return undefined;
     }
+}
+
+
+// convert ms-since-epoch to date in format of 2025-12-23
+export const convertTime = (msSinceEpoch: number) => {
+    const date = new Date(msSinceEpoch);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 export const farFuture = 3751917376000;

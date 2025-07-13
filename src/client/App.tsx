@@ -35,7 +35,12 @@ export type type_search_query = {
 /**
  * systems in the facility
  */
-export type type_topic = "control" | "operation" | "cryo" | "magnet" | "physics";
+// Define the array first
+export const allTopics = ["control", "operation", "cryo", "magnet", "physics"] as const;
+
+// Derive the type from the array
+export type type_topic = (typeof allTopics)[number];
+// export type type_topic = "control" | "operation" | "cryo" | "magnet" | "physics";
 
 /**
  * type of one post, a post could be 
@@ -64,6 +69,7 @@ export class App {
     _threadsData: type_threads = {};
     _thread: Thread = new Thread(this);
     _searchBar: SearchBar;
+    _threadsMatchCount: number = 0;
 
     constructor() {
         this._searchBar = new SearchBar(this);
@@ -114,30 +120,49 @@ export class App {
 
         return (
             <div style={{
-                marginTop: 0,
+                // marginTop: 15,
+                // paddingTop: 30,
+                // backgroundColor: "red",
             }}>
                 <div style={{
-                    width: "90%",
+                    width: "100%",
                     height: 100,
                     paddingLeft: 50,
                     display: "inline-flex",
                     alignItems: "center",
                     position: "fixed",
                     backgroundColor: "white",
-                    paddingBottom: 50,
+                    paddingBottom: 20,
+                    paddingTop: 15,
+                    // backgroundColor: "red",
+                    // marginTop: 30,
                 }}>
-                    <img src="/logo.png" style={{
-                        width: 200,
-                        cursor: "pointer",
-                    }}
-                        // the logo image: clear all search critia, search and go to "/"
-                        onMouseDown={async () => {
-                            this.getSearchBar().resetSearchQuery();
-                            navigate("/")
+                    <div style={{
+                        width: "90%",
+                        display: "inline-flex",
+                        flexDirection: 'row',
+                        height: "100%",
+                    alignItems: "center",
+                    
+                    }}>
+                        <img src="/logo.png" style={{
+                            minWidth: 200,
+                            maxWidth: 200,
+                            cursor: "pointer",
                         }}
-                    ></img>
-                    {this.getSearchBar().getElement()}
-                    <this._ElementAddThreadButton></this._ElementAddThreadButton>
+                            // the logo image: clear all search critia, search and go to "/"
+                            onMouseDown={async () => {
+                                const confirmToGo = this.getThread().confirmRouteAway("Do you want to disgard the post?");
+                                if (confirmToGo === false) {
+                                    return;
+                                }
+
+                                this.getSearchBar().resetSearchQuery();
+                                navigate("/")
+                            }}
+                        ></img>
+                        {this.getSearchBar().getElement()}
+                    </div>
                 </div>
                 <div style={{
                     width: "90%",
@@ -146,7 +171,9 @@ export class App {
                     display: "inline-flex",
                     alignItems: "center",
                     backgroundColor: "white",
-                    paddingBottom: 50,
+                    paddingBottom: 20,
+                    paddingTop: 15,
+
                 }}>
                 </div>
             </div>
@@ -168,12 +195,14 @@ export class App {
                 }}
                 style={{
                     display: "inline-flex",
-                    padding: 5,
+                    // padding: 5,
                     paddingLeft: 10,
                     paddingRight: 10,
                     backgroundColor: "rgba(235, 235, 235, 1)",
                     cursor: "pointer",
-                    marginRight: 10,
+                    // marginRight: 200,
+                    marginLeft: 30,
+                    height: 40,
                     borderRadius: 5,
                     transition: "background-color 0.2s ease",
                     whiteSpace: "nowrap",
@@ -200,14 +229,6 @@ export class App {
 
     _ElementThreadThumbnail = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
 
-        const mainPostData = threadData[0];
-        const title = mainPostData["title"];
-        const author = mainPostData["author"];
-        const time = mainPostData["time"];
-        const text = mainPostData["text"];
-        const topics = mainPostData["topics"];
-        const navigate = useNavigate();
-
         return (
             <tr style={{
                 backgroundColor: index % 2 === 1 ? "rgba(255,255,255,1)" : "rgba(235, 235, 235, 1)",
@@ -232,13 +253,11 @@ export class App {
                 <div
                     ref={elementRef}
                     onClick={async (event: any) => {
-                        if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
-                            const confirmed = window.confirm("Do you want to disgard the post?");
-                            if (confirmed === false) {
-                                return;
-                            }
-                            this.getThread().setState("view");
+                        const confirmToGo = this.getThread().confirmRouteAway("Do you want to disgard the post?");
+                        if (confirmToGo === false) {
+                            return;
                         }
+
                         this.getThread().setThreadData(threadId, []);
                         const url = `/thread?${new URLSearchParams({ id: threadId })}`;
                         navigate(url);
@@ -266,7 +285,6 @@ export class App {
     }
 
     _ElementThreadThumbnailTopics = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
-        const navigate = useNavigate();
         const mainPostData = threadData[0];
         const topics = mainPostData["topics"];
         const elementRef = React.useRef<any>(null);
@@ -299,12 +317,9 @@ export class App {
             <div
                 ref={elementRef}
                 onClick={async (event: any) => {
-                    if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
-                        const confirmed = window.confirm("Do you want to disgard the post?");
-                        if (confirmed === false) {
-                            return;
-                        }
-                        this.getThread().setState("view");
+                    const confirmToGo = this.getThread().confirmRouteAway("Do you want to disgard the post?");
+                    if (confirmToGo === false) {
+                        return;
                     }
                     const searchQuery = this.getSearchBar().getSearchQuery();
                     searchQuery["topic"] = topic;
@@ -346,12 +361,9 @@ export class App {
                 <div
                     ref={elementRef}
                     onClick={async (event: any) => {
-                        if (this.getThread().getState() === "adding-post" || this.getThread().getState() === "adding-thread") {
-                            const confirmed = window.confirm("Do you want to disgard the post?");
-                            if (confirmed === false) {
-                                return;
-                            }
-                            this.getThread().setState("view");
+                        const confirmToGo = this.getThread().confirmRouteAway("Do you want to disgard the post?");
+                        if (confirmToGo === false) {
+                            return;
                         }
 
                         const searchQuery = this.getSearchBar().getSearchQuery();
@@ -381,7 +393,6 @@ export class App {
     }
 
     _ElementThreadThumbnailTime = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
-        const navigate = useNavigate();
         const mainPostData = threadData[0];
         const time = mainPostData["time"];
         const elementRef = React.useRef<any>(null);
@@ -393,6 +404,7 @@ export class App {
                     ref={elementRef}
                     style={{
                         display: "inline-flex",
+                        whiteSpace: "nowrap",
                     }}
                 >
                     {getTimeStr(time)}
@@ -420,12 +432,18 @@ export class App {
         const timeRangeStr = params.get('timeRange');
         const authorStr = params.get('author');
         const topicStr = params.get('topic');
+        const staringCountStr = params.get('startingCount');
         const keywordsStr = params.get('keywords');
         const [, forceUpdate] = React.useState({});
 
         useEffect(() => {
 
             if (location.pathname === "/") {
+                const confirmToGo = this.getThread().confirmRouteAway("Do you want to disgard the post?");
+                if (confirmToGo === false) {
+                    return;
+                }
+
                 this.getSearchBar().resetSearchQuery();
                 const searchQuery = this.getSearchBar().getSearchQuery();
                 const url = convertSearchQueryToUrl(searchQuery);
@@ -463,11 +481,17 @@ export class App {
                     searchQuery["author"] = "";
                 }
 
+                if (staringCountStr !== null) {
+                    searchQuery["startingCount"] = parseInt(staringCountStr);
+                } else {
+                    searchQuery["startingCount"] = 0;
+                }
+
 
                 doSearch(searchQuery).then((data: any) => {
                     if (data !== undefined) {
                         this.setThreadsData(data.result);
-                        const url = convertSearchQueryToUrl(searchQuery);
+                        this.setThreadsMatchCount(data["matchCount"]);
                         forceUpdate({})
                     }
                 })
@@ -479,9 +503,10 @@ export class App {
             <div style={{
                 paddingLeft: 50,
                 paddingRight: 50,
-                backgroundColor: "green",
+                backgroundColor: "rgba(0,0,0,0)",
                 width: "90%",
             }}>
+                <this._ElementPageIndices></this._ElementPageIndices>
                 <table style={{
                 }}>
                     <tbody>
@@ -492,6 +517,85 @@ export class App {
                         })}
                     </tbody>
                 </table>
+            </div>
+        )
+    }
+
+    _ElementPageIndices = () => {
+        const matchCount = this.getThreadsMatchCount();
+        const startingCount = this.getSearchBar().getSearchQuery()["startingCount"];
+        const showCountMin = Math.max(0, startingCount - 250);
+        const showCountMax = Math.min(showCountMin + 500, matchCount);
+        const numPages = (showCountMax - showCountMin) / 50;
+
+        const threadsPerPage = 50;
+        const pageList: number[] = [];
+        for (let i = showCountMin; i < showCountMax; i += threadsPerPage) {
+            pageList.push(i);
+        }
+
+        return (
+            <div style={{
+                display: "inline-flex",
+                flexDirection: "row",
+                marginBottom: 20,
+                alignItems: "center",
+            }}>
+                {pageList.map((pageStartingCount: number) => {
+                    return (
+                        <this._ElementPageIndex startingCount={pageStartingCount}></this._ElementPageIndex>
+                    )
+                })}
+                <this._ElementAddThreadButton></this._ElementAddThreadButton>
+            </div>
+        )
+    }
+
+    _ElementPageIndex = ({ startingCount }: { startingCount: number }) => {
+        const elementRef = React.useRef<any>(null);
+        const navigate = useNavigate();
+        return (
+            <div
+                ref={elementRef}
+                style={{
+                    width: 50,
+                    height: 40,
+                    margin: 5,
+                    display: "inline-flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    borderRadius: 5,
+                    backgroundColor: this.getSearchBar().getSearchQuery()["startingCount"] === startingCount ? "rgba(235,235,235,1)" : "rgba(235,235,235,0)",
+                    border: "solid 1px rgba(100, 100, 100, 1)",
+                    transition: "background-color 0.2s ease",
+                }}
+                onMouseEnter={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = this.getSearchBar().getSearchQuery()["startingCount"] === startingCount ? "rgba(235,235,235,1)" : "rgba(235,235,235,1)";
+                    }
+                }}
+                onMouseLeave={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = this.getSearchBar().getSearchQuery()["startingCount"] === startingCount ? "rgba(235,235,235,1)" : "rgba(235,235,235,0)";
+                    }
+                }}
+                onMouseDown={async () => {
+
+                    const confirmToGo = this.getThread().confirmRouteAway("Do you want to disgard the post?");
+                    if (confirmToGo === false) {
+                        return;
+                    }
+                    const searchQuery = this.getSearchBar().getSearchQuery();
+                    searchQuery["startingCount"] = startingCount;
+                    const data = await doSearch(searchQuery);
+                    this.setThreadsData(data.result);
+                    this.setThreadsMatchCount(data["matchCount"]);
+                    const url = convertSearchQueryToUrl(searchQuery);
+                    navigate(url);
+                }}
+            >
+                {Math.round(startingCount / 50 + 1)}
             </div>
         )
     }
@@ -514,6 +618,14 @@ export class App {
 
     getThread = () => {
         return this._thread;
+    }
+
+    getThreadsMatchCount = () => {
+        return this._threadsMatchCount;
+    }
+
+    setThreadsMatchCount = (newCount: number) => {
+        this._threadsMatchCount = newCount;
     }
 
 }

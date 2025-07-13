@@ -43,10 +43,12 @@ export class HttpServer {
             };
 
             const searchResult = this.getDbData().searchThreads(searchQuery);
+            
 
             res.json({
                 query: searchQuery,
-                result: searchResult,
+                result: searchResult["result"],
+                matchCount: searchResult["matchCount"],
             });
         });
 

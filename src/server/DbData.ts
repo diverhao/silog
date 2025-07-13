@@ -151,7 +151,10 @@ export class DbData {
                         ];
                     }
                     matchCount++;
-                    if (matchCount >= searchQuery["startingCount"] + searchQuery["count"]) {
+                    // if (matchCount >= searchQuery["startingCount"] + searchQuery["count"]) {
+                    //     break;
+                    // }
+                    if (matchCount >= searchQuery["startingCount"] + 500) {
                         break;
                     }
                 }
@@ -160,8 +163,11 @@ export class DbData {
         const t1 = performance.now();
         // print search summary
         console.log("Search query:", JSON.stringify(searchQuery, null, 4));
-        console.log("Found", Object.keys(result).length, "result,", "takes", Math.round(t1 - t0), "ms");
-        return result;
+        console.log("Found", Object.keys(result).length, "result,", "reached", matchCount, "takes", Math.round(t1 - t0), "ms");
+        return {
+            result: result,
+            matchCount: matchCount,
+        };
     }
 
     searchThread = (threadId: string) => {
