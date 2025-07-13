@@ -292,10 +292,11 @@ export class App {
                     marginLeft: 30,
                     height: 40,
                     borderRadius: 5,
-                    transition: "background-color 0.2s ease",
+                    transition: "all 0.2s ease",
                     whiteSpace: "nowrap",
                     justifyContent: "center",
                     alignItems: "center",
+                    
                 }}
                 onMouseEnter={() => {
                     if (elementRef.current !== null) {

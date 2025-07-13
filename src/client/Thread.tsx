@@ -694,7 +694,7 @@ export class Thread {
 
                     const postData: type_post = {
                         title: oldState === "adding-thread" ? title : "",
-                        author: "",
+                        author: this.getApp().getUserName(),
                         time: 0,
                         text: cleanText,
                         topics: oldState === "adding-thread" ? topics : [],

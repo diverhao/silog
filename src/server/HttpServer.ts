@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import path from 'path';
 import { DbData, type_search_query } from './DbData';
 import * as fs from "fs";
+import https from "https";
 
 import passport from "passport";
 import LdapStrategy from "passport-ldapauth";
@@ -11,6 +12,8 @@ export class HttpServer {
     private _server = express();
     private _dbData: DbData;
     private _port: number;
+    private _httpsOptions: { key: Buffer, cert: Buffer } | undefined = undefined;
+    private _httpsServer: https.Server | undefined = undefined;
 
     constructor(port: number, dbData: DbData) {
         this._port = port;
@@ -211,9 +214,19 @@ export class HttpServer {
         //     res.sendFile(path.join(__dirname, 'resources/index.html'))
         // })
 
-        this.getServer().listen(this.getPort(), () => {
-            console.log(`Server running at http://localhost:${this.getPort()}`);
+        // this.getServer().listen(this.getPort(), () => {
+        //     console.log(`Server running at http://localhost:${this.getPort()}`);
+        // });
+
+        const httpsOptions = this.getHttpsOptions();
+        if (httpsOptions === undefined) {
+            return;
+        }
+        // listen to all network interfaces
+        this._httpsServer = https.createServer(httpsOptions, this.getServer()).listen(this.getPort(), "0.0.0.0", () => {
+            console.log(`HTTPS Server running on port ${this.getPort()}`);
         });
+
 
     }
 
@@ -229,6 +242,18 @@ export class HttpServer {
 
     getDbData = () => {
         return this._dbData;
+    }
+
+    getHttpsOptions = () => {
+        return this._httpsOptions;
+    }
+
+    setHttpsOptions = (newOptions: { key: Buffer, cert: Buffer } ) => {
+        this._httpsOptions = newOptions;
+    }
+
+    setLdapOptions = (newOptions: LdapStrategy.Options) => {
+        this.LDAP_OPTIONS = newOptions;
     }
 
 }
