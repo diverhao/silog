@@ -11,8 +11,18 @@ import { EditorProvider, useCurrentEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 // import { useEditor } from '@tiptap/react';
 import { useEditor, Editor, EditorContent } from '@tiptap/react';
+// import Table from '@tiptap/extension-table'
+// import TableRow from '@tiptap/extension-table-row'
+// import TableCell from '@tiptap/extension-table-cell'
+// import TableHeader from '@tiptap/extension-table-header'
+import { TableCell, TableKit } from '@tiptap/extension-table'
 
-import Figure from 'tiptap-extension-figure';
+// import Table from '@tiptap/extension-table'
+// import TableRow from '@tiptap/extension-table-row'
+// import TableCell from '@tiptap/extension-table-cell'
+// import TableHeader from '@tiptap/extension-table-header'
+
+// import Figure from '@tiptap/extension-figure';
 import Image from '@tiptap/extension-image';
 import { ImageResize } from './ImageResize';
 import { convertSearchQueryToUrl, getTimeStr } from './Shared';
@@ -43,11 +53,27 @@ const CustomImage = Image.extend({
 });
 
 const _ElementEditorButton = ({ children, disabled, className, onClick }: any) => {
+    const elementRef = React.useRef<any>(null);
     return <button
+        ref={elementRef}
         style={{
             marginRight: 5,
+            border: "solid 1px rgba(200, 200, 200, 1)",
+            borderRadius: 2,
+            transition: "background-color 0.2s ease",
+            backgroundColor: "rgba(235, 235, 235, 1)",
         }}
         onClick={onClick}
+        onMouseEnter={() => {
+            if (elementRef.current !== null) {
+                elementRef.current.style["backgroundColor"] = "rgba(215, 215, 215, 1)";
+            }
+        }}
+        onMouseLeave={() => {
+            if (elementRef.current !== null) {
+                elementRef.current.style["backgroundColor"] = "rgba(235, 235, 235, 1)";
+            }
+        }}
         disabled={disabled}
         className={className}
     >
@@ -64,7 +90,9 @@ const MenuBar = ({ editor }: any) => {
 
     return (
         <div className="control-group">
-            <div className="button-group">
+            <div style={{
+                marginBottom: 5,
+            }}>
 
                 <_ElementEditorButton
                     onClick={() => {
@@ -169,6 +197,8 @@ const MenuBar = ({ editor }: any) => {
                 >
                     Code
                 </_ElementEditorButton>
+
+
                 {/* <_ElementEditorButton onClick={() => editor.chain().focus().unsetAllMarks().run()}>
                     Clear marks
                 </_ElementEditorButton>
@@ -277,8 +307,40 @@ const MenuBar = ({ editor }: any) => {
                 >
                     Purple
                 </_ElementEditorButton> */}
+
+                {/* Table */}
             </div>
-        </div>
+            <div className='button-group'>
+                <_ElementEditorButton onClick={() => {
+                    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+                }}>
+                    Insert table
+                </_ElementEditorButton>
+
+                <_ElementEditorButton
+                    onClick={() => editor.chain().focus().addColumnBefore().run()}
+                    disabled={!editor.can().addColumnBefore()}
+                >
+                    Add column before
+                </_ElementEditorButton>
+                <_ElementEditorButton
+                    onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>
+                    Add column after
+                </_ElementEditorButton>
+                <_ElementEditorButton onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()}>
+                    Delete column
+                </_ElementEditorButton>
+                <_ElementEditorButton onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>
+                    Add row before
+                </_ElementEditorButton>
+                <_ElementEditorButton onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>
+                    Add row after
+                </_ElementEditorButton>
+                <_ElementEditorButton onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()}>
+                    Delete row
+                </_ElementEditorButton>
+            </div>
+        </div >
     )
 }
 
@@ -444,13 +506,14 @@ export class Thread {
 
 
     _ElementNewPostTopics = ({ topics, setTopics }: { topics: type_topic[], setTopics: any }) => {
-
+        const elementRef = React.useRef<any>(null);
         return (
             <div style={{
                 display: "inline-flex",
                 flexDirection: "row",
                 marginBottom: 20,
-            }}>
+            }}
+            >
                 {allTopics.map((topic: string, index: number) => {
                     return (
                         <this._ElementNewPostTopic key={topic + `${index}`} topic={topic} setTopics={setTopics}></this._ElementNewPostTopic>
@@ -480,12 +543,31 @@ export class Thread {
                     }
                     setSelected(!selected);
                 }}
+                onMouseEnter={() => {
+                    if (selected === true) {
+                        return;
+                    }
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = "rgba(215,215,215,1)";
+                    }
+                }}
+
+                onMouseLeave={() => {
+                    if (selected === true) {
+                        return;
+                    }
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = "rgba(235,235,235,1)";
+                    }
+                }}
+
                 style={{
                     display: "inline-flex",
                     padding: 5,
                     paddingLeft: 10,
                     paddingRight: 10,
-                    backgroundColor: selected ? "rgba(0, 235, 0, 1)" : "rgba(235, 235, 235, 1)",
+                    backgroundColor: selected ? "rgba(235, 235, 235, 1)" : "rgba(235, 235, 235, 1)",
+                    color: selected ? "rgba(0,0,0, 1)": "rgba(173, 173, 173, 1)",
                     cursor: "pointer",
                     marginRight: 10,
                     borderRadius: 5,
@@ -575,6 +657,30 @@ export class Thread {
             <div
                 ref={elementRef}
                 onClick={async () => {
+                    // stop if the topics and title are there
+                    if (this.getState() === "adding-thread") {
+                        if (topics.length === 0) {
+                            // show error message
+                            this.getApp().fullPageMessageText = "You must select at least one topic.";
+                            this.getApp().setFullPageMessageType("error");
+                            return;
+                        }
+                        if (title.trim().length === 0) {
+                            // show error message
+                            this.getApp().fullPageMessageText = "The title is empty.";
+                            this.getApp().setFullPageMessageType("error");
+                            return;
+                        }
+                    }
+                    if (this.getState() === "adding-post") {
+                        if (text.trim() === "") {
+                            // show error message
+                            this.getApp().fullPageMessageText = "There is no content in this post.";
+                            this.getApp().setFullPageMessageType("error");
+                            return;
+                        }
+                    }
+
 
                     const confirmed = window.confirm("Do you want to publish the post?");
                     if (confirmed === false) {
@@ -694,6 +800,7 @@ export class Thread {
         return (
             <div
                 ref={elementRef}
+                className='no-print'
                 onClick={async () => {
                     this.setState("adding-post");
                     const url = `/thread?id=${this.getThreadId()}&state=adding-post`;
@@ -764,14 +871,24 @@ export class Thread {
 
 
     _ElementNewPost = () => {
-        const [text, setText] = useState('<p>Hello World</p>');
+        const [text, setText] = useState('');
         const [title, setTitle] = useState("");
         const [topics, setTopics] = useState<type_topic[]>([]);
 
         const editor = useEditor({
-            extensions: [StarterKit, Image, Figure, ImageResize, CustomImage],
+            extensions: [
+                StarterKit,
+                ImageResize,
+                CustomImage,
+                TableKit.configure({
+                    table: { resizable: true },
+                    tableCell: false,
+                }),
+                TableCell,
+            ],
             content: "",
             onUpdate({ editor }) {
+                console.log(editor.getHTML())
                 setText(editor.getHTML());
             },
         });
@@ -929,6 +1046,9 @@ export class Thread {
             const url = await this.uploadBase64Image(base64);
             html = html.replace(base64, url);
         }
+
+        // for Table appearance
+        html = '<div class="tiptap">' + html + "</div>";
 
         return html;
     }

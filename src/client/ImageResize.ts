@@ -35,7 +35,10 @@ export const ImageResize = Image.extend({
                         ...node.attrs,
                         style: `${$img.style.cssText}`,
                     };
-                    view.dispatch(view.state.tr.setNodeMarkup(getPos(), null, newAttrs));
+                    const pos = getPos();
+                    if (pos !== undefined) {
+                        view.dispatch(view.state.tr.setNodeMarkup(pos, null, newAttrs));
+                    }
                 }
             };
             const paintPositionContoller = () => {

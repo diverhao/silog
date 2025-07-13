@@ -105,25 +105,33 @@ export class App {
     }
 
     Layout = () => {
+        const [fullPageMessageType, setFullPageMessageType] = React.useState<"error" | "warning" | "info" | "">("");
+        this.setFullPageMessageType = setFullPageMessageType;
 
         return (
             <div style={{
             }}>
                 <this._ElementTopBar></this._ElementTopBar>
                 <Outlet />
+                <this._ElementFullPageMessage type={fullPageMessageType}></this._ElementFullPageMessage>
             </div>
         );
     }
+
+    setFullPageMessageType = (type: "error" | "warning" | "info" | "") => { };
+    fullPageMessageText = "";
 
     _ElementTopBar = () => {
         const navigate = useNavigate();
 
         return (
-            <div style={{
-                // marginTop: 15,
-                // paddingTop: 30,
-                // backgroundColor: "red",
-            }}>
+            <div
+                className='no-print'
+                style={{
+                    // marginTop: 15,
+                    // paddingTop: 30,
+                    // backgroundColor: "red",
+                }}>
                 <div style={{
                     width: "100%",
                     height: 100,
@@ -142,8 +150,8 @@ export class App {
                         display: "inline-flex",
                         flexDirection: 'row',
                         height: "100%",
-                    alignItems: "center",
-                    
+                        alignItems: "center",
+
                     }}>
                         <img src="/logo.png" style={{
                             minWidth: 200,
@@ -175,6 +183,55 @@ export class App {
                     paddingTop: 15,
 
                 }}>
+                </div>
+            </div>
+        )
+    }
+
+    _ElementFullPageMessage = ({ type }: { type: "error" | "warning" | "info" | "" }) => {
+        if (type === "") {
+            return null;
+        }
+        return (
+            <div style={{
+                display: "inline-flex",
+                position: "absolute",
+                left: 0,
+                top: 0,
+                width: "100%",
+                height: "100%",
+                zIndex: 10000,
+                backdropFilter: "blur(10px)",
+                backgroundColor: "rgba(180, 180, 180, 0.3)",
+                justifyContent: "center",
+                alignItems: "center",
+                flexDirection: "column",
+            }}>
+                <div style={{
+                    color: type === "error" ? "red" : type === "warning" ? "blue" : type === "info" ? "green" : "black",
+                    fontSize: 36,
+                    marginBottom: 30,
+                }}>
+                    {type.toUpperCase()}
+                </div>
+                <div style={{
+                    marginBottom: 30,
+                }}>
+                    {this.fullPageMessageText}
+                </div>
+                <div
+                    onClick={() => { this.setFullPageMessageType("") }}
+                    style={{
+                        display: "inline-flex",
+                        padding: 5,
+                        paddingLeft: 20,
+                        paddingRight: 20,
+                        backgroundColor: "rgba(138, 206, 247, 1)",
+                        borderRadius: 5,
+                        cursor: "pointer",
+                    }}
+                >
+                    OK
                 </div>
             </div>
         )
@@ -233,7 +290,7 @@ export class App {
             <tr style={{
                 backgroundColor: index % 2 === 1 ? "rgba(255,255,255,1)" : "rgba(235, 235, 235, 1)",
             }}>
-                <this._ElementThreadThumbnailTopics threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTopics>
+                {/* <this._ElementThreadThumbnailTopics threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTopics> */}
                 <this._ElementThreadThumbnailTitle threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTitle>
                 <this._ElementThreadThumbnailAuthor threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailAuthor>
                 <this._ElementThreadThumbnailTime threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTime>

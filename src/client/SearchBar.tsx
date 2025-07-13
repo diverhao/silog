@@ -545,13 +545,9 @@ export class SearchBar {
 
 
     _ElementCalendar = ({ showCalendar, setShowCalendar, forceUpdate, isStartTime }: any) => {
-        const elementDoneButton = React.useRef<any>(null);
-        const elementClearButton = React.useRef<any>(null);
         if (showCalendar === false) {
             return null
         }
-
-
         return (
             <div style={{
                 position: "absolute",
@@ -595,68 +591,6 @@ export class SearchBar {
                     }}
                     value={this.obtainCalenderDate(isStartTime)}
                 />
-                <div
-                    ref={elementDoneButton}
-                    onMouseDown={() => {
-                        setShowCalendar(false);
-                    }}
-                    style={{
-                        display: "inline-flex",
-                        backgroundColor: "rgba(168, 196, 246, 1)",
-                        cursor: "pointer",
-                        transition: "background-color 0.2s ease",
-                        padding: 10,
-                        borderRadius: 5,
-                        marginTop: 10,
-                        marginRight: 10,
-                    }}
-                    onMouseEnter={() => {
-                        if (elementDoneButton.current !== null) {
-                            elementDoneButton.current.style["backgroundColor"] = "rgba(168,150,255,1)";
-                        }
-                    }}
-                    onMouseLeave={() => {
-                        if (elementDoneButton.current !== null) {
-                            elementDoneButton.current.style["backgroundColor"] = "rgba(168,196,246,1)";
-                        }
-                    }}
-                >
-                    Done
-                </div>
-
-                <div
-                    ref={elementClearButton}
-                    onMouseDown={() => {
-                        if (isStartTime) {
-                            this.getSearchQuery().timeRange[0] = 0;
-                        } else {
-                            this.getSearchQuery().timeRange[1] = farFuture;
-                        }
-                        setShowCalendar(false);
-
-                    }}
-                    style={{
-                        display: "inline-flex",
-                        backgroundColor: "rgba(168, 196, 246, 1)",
-                        cursor: "pointer",
-                        transition: "background-color 0.2s ease",
-                        padding: 10,
-                        borderRadius: 5,
-                        marginTop: 10,
-                    }}
-                    onMouseEnter={() => {
-                        if (elementClearButton.current !== null) {
-                            elementClearButton.current.style["backgroundColor"] = "rgba(168,150,255,1)";
-                        }
-                    }}
-                    onMouseLeave={() => {
-                        if (elementClearButton.current !== null) {
-                            elementClearButton.current.style["backgroundColor"] = "rgba(168,196,246,1)";
-                        }
-                    }}
-                >
-                    Clear
-                </div>
             </div>
         );
     }
