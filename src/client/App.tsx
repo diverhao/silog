@@ -70,12 +70,30 @@ export class App {
     _thread: Thread = new Thread(this);
     _searchBar: SearchBar;
     _threadsMatchCount: number = 0;
+    _userName: string = "";
+    _setLogoutButtonText = (input: any) => {};
 
     constructor() {
         this._searchBar = new SearchBar(this);
     }
 
     _Element = () => {
+
+
+        useEffect(() => {
+            fetch("/me", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}),
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    this.setUserName(data["displayName"]);
+                    this._setLogoutButtonText(data["displayName"]);
+                })
+        }, []);
 
 
         const router = createBrowserRouter([
@@ -95,7 +113,6 @@ export class App {
                         path: 'thread',
                         element: <this._ElementThreadWrapper />,
                     },
-
                 ],
             },
         ]);
@@ -153,7 +170,7 @@ export class App {
                         alignItems: "center",
 
                     }}>
-                        <img src="/logo.png" style={{
+                        <img src="/resources/logo.png" style={{
                             minWidth: 200,
                             maxWidth: 200,
                             cursor: "pointer",
@@ -237,6 +254,72 @@ export class App {
         )
     }
 
+    _ElementLogoutButton = () => {
+        const [text, setText] = React.useState(this.getUserName());
+        this._setLogoutButtonText = setText;
+        const elementRef = React.useRef<any>(null);
+        return (
+            <div
+                ref={elementRef}
+                onClick={async () => {
+                    const confirmToGo = this.getThread().confirmRouteAway("Do you want to log out?");
+                    if (confirmToGo === false) {
+                        return;
+                    }
+
+                    fetch('/logout', {
+                        method: 'POST',
+                        credentials: 'include', // include cookies/session info
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                    }).then((res) => {
+                        if (res.ok) {
+                            window.location.href = '/login'; // Redirect to login after logout
+                        } else {
+                            alert("Logout failed");
+                        }
+                    });
+                }}
+                style={{
+                    display: "inline-flex",
+                    // padding: 5,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                    backgroundColor: "rgba(235, 235, 235, 1)",
+                    cursor: "pointer",
+                    // marginRight: 200,
+                    marginLeft: 30,
+                    height: 40,
+                    borderRadius: 5,
+                    transition: "background-color 0.2s ease",
+                    whiteSpace: "nowrap",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}
+                onMouseEnter={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = "rgba(220, 0, 0, 1)";
+                        elementRef.current.style["color"] = "rgba(220, 220, 220, 1)";
+                        setText("LOGOUT");
+                    }
+                }}
+
+                onMouseLeave={() => {
+                    if (elementRef.current !== null) {
+                        elementRef.current.style["backgroundColor"] = "rgba(235, 235, 235, 1)";
+                        elementRef.current.style["color"] = "rgba(0, 0, 0, 1)";
+                        setText(this.getUserName());
+                    }
+                }}
+            >
+                {text}
+            </div>
+        )
+    }
+
+
+
     _ElementAddThreadButton = () => {
         const navigate = useNavigate();
         const elementRef = React.useRef<any>(null);
@@ -282,6 +365,8 @@ export class App {
             </div>
         )
     }
+
+
 
 
     _ElementThreadThumbnail = ({ threadId, threadData, index }: { threadId: string, threadData: type_thread, index: number }) => {
@@ -565,6 +650,7 @@ export class App {
             }}>
                 <this._ElementPageIndices></this._ElementPageIndices>
                 <table style={{
+                    width: "100%",
                 }}>
                     <tbody>
                         {Object.entries(this.getThreadsData()).map(([threadId, threadData], index) => {
@@ -597,13 +683,30 @@ export class App {
                 flexDirection: "row",
                 marginBottom: 20,
                 alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
             }}>
-                {pageList.map((pageStartingCount: number) => {
-                    return (
-                        <this._ElementPageIndex startingCount={pageStartingCount}></this._ElementPageIndex>
-                    )
-                })}
-                <this._ElementAddThreadButton></this._ElementAddThreadButton>
+                <div style={{
+                    display: "inline-flex",
+                    flexDirection: "row",
+                    marginBottom: 20,
+                    alignItems: "center",
+                }}>
+                    {pageList.map((pageStartingCount: number) => {
+                        return (
+                            <this._ElementPageIndex startingCount={pageStartingCount}></this._ElementPageIndex>
+                        )
+                    })}
+                    <this._ElementAddThreadButton></this._ElementAddThreadButton>
+                </div>
+                <div style={{
+                    display: "inline-flex",
+                    flexDirection: "row",
+                    marginBottom: 20,
+                    alignItems: "center",
+                }}>
+                    <this._ElementLogoutButton></this._ElementLogoutButton>
+                </div>
             </div>
         )
     }
@@ -683,6 +786,14 @@ export class App {
 
     setThreadsMatchCount = (newCount: number) => {
         this._threadsMatchCount = newCount;
+    }
+
+    getUserName = () => {
+        return this._userName;
+    }
+
+    setUserName = (newName: string) => {
+        this._userName = newName;
     }
 
 }

@@ -628,25 +628,25 @@ export class SearchBar {
                         <this._ElementAuthor></this._ElementAuthor>
                         <this._ElementTopic></this._ElementTopic>
                     </div>
-                    <div style={{
-                        display: "inline-flex",
-                        flexDirection: "row",
-                        height: 40,
-                        // backgroundColor: "rgba(255,255,0,1)",
-                        borderRadius: 20,
-                        border: "solid 1px rgba(0,0,0,1)",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        paddingLeft: 15,
-                        paddingRight: 3,
-                        marginLeft: 0,
-                        marginRight: 15,
-                        flex: "grow",
-                        boxSizing: 'border-box',
-                    }}>
-                        <this._ElementKeywords></this._ElementKeywords>
-                        <this._ElementSearchButton></this._ElementSearchButton>
-                    </div>
+                        <div style={{
+                            display: "inline-flex",
+                            flexDirection: "row",
+                            height: 40,
+                            // backgroundColor: "rgba(255,255,0,1)",
+                            borderRadius: 20,
+                            border: "solid 1px rgba(0,0,0,1)",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            paddingLeft: 15,
+                            paddingRight: 3,
+                            marginLeft: 0,
+                            marginRight: 15,
+                            flex: "grow",
+                            boxSizing: 'border-box',
+                        }}>
+                            <this._ElementKeywords></this._ElementKeywords>
+                            <this._ElementSearchButton></this._ElementSearchButton>
+                        </div>
                 </div>
                 {/* <div style={{
                     width: "100%",

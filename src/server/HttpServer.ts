@@ -3,6 +3,10 @@ import path from 'path';
 import { DbData, type_search_query } from './DbData';
 import * as fs from "fs";
 
+import passport from "passport";
+import LdapStrategy from "passport-ldapauth";
+import session from "express-session";
+
 export class HttpServer {
     private _server = express();
     private _dbData: DbData;
@@ -13,15 +17,113 @@ export class HttpServer {
         this._dbData = dbData;
     }
 
-    start = () => {
-        this.getServer().use(express.static(path.join(__dirname, 'resources')));
-        this.getServer().use(express.static(path.join(__dirname, '../webpack')));
-        this.getServer().use(express.json({limit: "50mb"})); // required to parse JSON body
+    LDAP_OPTIONS: LdapStrategy.Options = {
+        server: {
+            url: "ldap://localhost:3890",
+            bindDN: "",
+            bindCredentials: "",
+            searchBase: "ou=users,dc=example,dc=com",
+            searchFilter: "(uid={{username}})",
+            searchScope: "sub",
+            tlsOptions: { rejectUnauthorized: false },
+        },
+    };
 
-        this.getServer().get('/', (req: Request, res: Response) => {
-            res.sendFile(path.join(__dirname, 'resources/index.html'))
+    start = () => {
+
+
+        // ------------ LDAP authentication ------------------------
+
+        // tell passport.js to use LDAP authentication strategy
+        passport.use(new LdapStrategy(this.LDAP_OPTIONS));
+        passport.serializeUser((user, done) => done(null, user));
+        passport.deserializeUser((user: any, done) => done(null, user));
+
+        // passport.js and session
+        // express-session midware, passport.js depends on it
+        this._server.use(session({
+            secret: "secretKey",
+            resave: false,
+            saveUninitialized: true
+        }));
+        // init passport.js
+        this._server.use(passport.initialize());
+        // add .user, .isAuthenticated(), to req
+        this._server.use(passport.session());
+
+
+
+        // ---------------- midwares -------------------------------
+        this.getServer().use("/resources", express.static(path.join(__dirname, 'resources')));
+        this.getServer().use(express.static(path.join(__dirname, '../webpack')));
+        this.getServer().use(express.json({ limit: "50mb" })); // required to parse JSON body
+        this._server.use(express.urlencoded({ limit: 10 * 1024 * 1024, extended: true }));
+
+
+        // authentication
+        this._server.use((req: any, res: any, next: any) => {
+            if (req.path === '/' || req.path === '/login' || req.path.startsWith("/resources/")) {
+                next();
+                return;
+            }
+
+            if (req.isAuthenticated()) {
+                next(); // Proceed to the requested route if authenticated
+                return
+            } else {
+                res.status(403).send("Access Denied. Please <a href='/login'>log in</a>.");
+                return;
+            }
         });
 
+        this._server.post('/login',
+            // authentication midware
+            (req: any, res: any, next: any) => {
+                const ldapMidware = passport.authenticate("ldapauth", { session: true });
+                ldapMidware(req, res, next);
+                return;
+            },
+        );
+
+        this._server.post("/me", (req, res) => {
+            if (req.isAuthenticated()) {
+                console.log(req.user)
+                const userInfo = req.user as any;
+                res.json({
+                    // username: req.user.uid, // Or whatever attribute your LDAP returns
+                    displayName: userInfo.displayName,
+                });
+            } else {
+                res.status(401).json({ error: "Not logged in" });
+            }
+
+        })
+
+        this._server.post('/logout', (req, res) => {
+            req.logout((err) => {
+                if (err) {
+                    console.error("Logout error:", err);
+                    return res.status(500).send("Logout failed.");
+                }
+
+                req.session.destroy(() => {
+                    res.clearCookie("connect.sid"); // optional: clear the session cookie
+                    res.sendStatus(200); // or res.json({ success: true })
+                });
+            });
+        });
+
+        this.getServer().get('/login', (req: Request, res: Response) => {
+            res.sendFile(path.join(__dirname, 'resources/login.html'))
+        });
+
+        this.getServer().get('/', (req: Request, res: Response) => {
+            res.redirect("/login")
+        });
+
+        this.getServer().get('/main', (req: Request, res: Response) => {
+            res.sendFile(path.join(__dirname, 'resources/index.html'))
+        });
         this.getServer().get('/search', (req: Request, res: Response) => {
             res.sendFile(path.join(__dirname, 'resources/index.html'))
         });
@@ -43,7 +145,7 @@ export class HttpServer {
             };
 
             const searchResult = this.getDbData().searchThreads(searchQuery);
-            
+
 
             res.json({
                 query: searchQuery,
@@ -100,7 +202,7 @@ export class HttpServer {
 
             fs.writeFileSync(path.join(__dirname, `./resources/${fileName}`), buffer);
 
-            res.json({ url: `/${fileName}` });
+            res.json({ url: `/resources/${fileName}` });
         });
 
 
