@@ -8,7 +8,7 @@ import 'react-calendar/dist/Calendar.css'; // import default styles
 import '../server/resources/Calendar.css'; // import default styles
 import { Value } from "react-calendar/dist/shared/types";
 import { nanoid } from 'nanoid';
-import { convertSearchQueryToUrl, convertTime, doSearch, farFuture } from "./Shared";
+import { convertSearchQueryToUrl, convertTime, doSearch, farFuture, hiDpiFontSizeScale, hiDpiInputBoxBorderHeight } from "./Shared";
 
 export class SearchBar {
     private _app: App;
@@ -26,14 +26,34 @@ export class SearchBar {
     setShowCalendarEndTime = (show: boolean) => { };
     setShowTopicChoices = (show: boolean) => { };
     forceUpdate = (input: any) => { };
+    // _ElementAddThreadButton: any;
+    // only for mobile device
+    _setLogoutButtonText = (input: string) => { console.log("aaaaa") };
+
+    setShowSearchScreen = (input: boolean) => { };
 
     constructor(app: App) {
         this._app = app;
+        // this._ElementAddThreadButton = this._app._ElementAddThreadButton;
         window.addEventListener("mousedown", () => {
             this.setShowCalendarStartTime(false);
             this.setShowCalendarEndTime(false);
             this.setShowTopicChoices(false);
         })
+
+        if (!this._app.isDesktop()) {
+            // Check if the CSS is already loaded
+            // if ([...document.styleSheets].some(sheet => sheet.href && sheet.href.includes(href))) {
+            //     return;
+            // }
+
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = "/resources/Calendar-phone.css";
+            link.type = 'text/css';
+            document.head.appendChild(link);
+
+        }
     }
 
 
@@ -51,25 +71,26 @@ export class SearchBar {
             <div style={{
                 display: "inline-flex",
                 flexDirection: "row",
-                height: 40,
+                height: this.getApp().isDesktop() ? 40 : hiDpiInputBoxBorderHeight,
                 // backgroundColor: "rgba(255,255,1,1)",
                 borderRadius: 20,
                 border: "solid 1px rgba(0,0,0,1)",
                 justifyContent: "flex-start",
                 alignItems: "center",
-                paddingLeft: 15,
+                paddingLeft: this.getApp().isDesktop() ? 15 : 0,
                 // paddingRight: 3,
                 // marginRight: 5,
                 minWidth: "10em",
                 maxWidth: "10em",
-                marginLeft: 5,
+                marginLeft: this.getApp().isDesktop() ? 5 : 0,
+
                 marginTop: 15,
                 marginBottom: 15,
                 boxSizing: "border-box",
                 marginRight: 5,
                 paddingRight: 3,
 
-                flex: 1,
+                flex: this.getApp().isDesktop() ? 1 : "",
 
             }}>
 
@@ -93,9 +114,10 @@ export class SearchBar {
                             border: "none",
                             width: "100%",
                             // backgroundColor: "yellow",
-                            fontSize: 16,
+                            fontSize: this.getApp().isDesktop() ? 16 : "100%",
                             margin: 0,
                             fontFamily: "Inter, sans-serif",
+
                         }}
                         value={this.getSearchQuery()["author"]}
                         onChange={(event: any) => {
@@ -128,7 +150,7 @@ export class SearchBar {
             <div style={{
                 display: "inline-flex",
                 flexDirection: "column",
-                height: 42,
+                height: this.getApp().isDesktop() ? 42 : hiDpiInputBoxBorderHeight,
                 minWidth: "10em",
                 maxWidth: "10em",
                 overflow: "visible",
@@ -145,15 +167,15 @@ export class SearchBar {
                 marginTop: 15,
                 marginBottom: 15,
                 marginRight: 5,
-                flex: 1,
+                flex: this.getApp().isDesktop() ? 1 : "",
                 boxSizing: "border-box",
 
             }}>
                 <div style={{
                     display: "inline-flex",
                     flexDirection: "column",
-                    minHeight: 40,
-                    maxHeight: 40,
+                    minHeight: this.getApp().isDesktop() ? 40 : hiDpiInputBoxBorderHeight,
+                    maxHeight: this.getApp().isDesktop() ? 40 : hiDpiInputBoxBorderHeight,
                     backgroundColor: "rgba(255,255,255,1)",
                     borderRadius: 20,
                     border: "solid 1px rgba(0,0,0,1)",
@@ -188,7 +210,7 @@ export class SearchBar {
                         justifyContent: showClearButton === true ? "space-between" : "flex-start",
                         alignItems: "center",
                         fontFamily: "Inter, sans-serif",
-                        fontSize: 16,
+                        fontSize: this.getApp().isDesktop() ? 16 : "100%",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         flexDirection: "row",
@@ -289,7 +311,7 @@ export class SearchBar {
                     transition: "background-color 0.2s ease",
                     marginTop: 5,
                     marginBottom: 5,
-                    fontSize: 16,
+                    fontSize: this.getApp().isDesktop() ? 16 : "100%",
                 }}
             >
                 {topic === "" ? "All topics" : topic}
@@ -333,7 +355,7 @@ export class SearchBar {
                         outline: "none",
                         border: "none",
                         width: "100%",
-                        fontSize: 16,
+                        fontSize: this.getApp().isDesktop() ? 16 : "100%",
                         margin: 0,
                         fontFamily: "Inter, sans-serif",
                     }}
@@ -362,13 +384,13 @@ export class SearchBar {
             <div
                 ref={elementRef}
                 style={{
-                    fontSize: 16,
-                    width: 34,
-                    height: 34,
-                    maxWidth: 34,
-                    maxHeight: 34,
-                    minWidth: 34,
-                    minHeight: 34,
+                    fontSize: this.getApp().isDesktop() ? 16 : "100%",
+                    width: this.getApp().isDesktop() ? 34 : 80,
+                    height: this.getApp().isDesktop() ? 34 : 80,
+                    maxWidth: this.getApp().isDesktop() ? 34 : 80,
+                    maxHeight: this.getApp().isDesktop() ? 34 : 80,
+                    minWidth: this.getApp().isDesktop() ? 34 : 80,
+                    minHeight: this.getApp().isDesktop() ? 34 : 80,
                     borderRadius: 17,
                     display: "inline-flex",
                     justifyContent: "center",
@@ -416,13 +438,13 @@ export class SearchBar {
             <div
                 ref={elementRef}
                 style={{
-                    fontSize: 16,
+                    // fontSize: 16,
                     width: 34,
                     height: 34,
-                    maxWidth: 34,
-                    maxHeight: 34,
-                    minWidth: 34,
-                    minHeight: 34,
+                    maxWidth: this.getApp().isDesktop() ? 34 : 80,
+                    maxHeight: this.getApp().isDesktop() ? 34 : 80,
+                    minWidth: this.getApp().isDesktop() ? 34 : 80,
+                    minHeight: this.getApp().isDesktop() ? 34 : 80,
                     borderRadius: 17,
                     display: "inline-flex",
                     justifyContent: "center",
@@ -431,6 +453,7 @@ export class SearchBar {
                     cursor: "pointer",
                     transition: "background-color 0.2s ease",
                     color: "rgba(180, 180, 180, 1)",
+                    fontSize: this.getApp().isDesktop() ? "100%" : 48,
                 }}
                 onMouseEnter={(event: any) => {
                     event.preventDefault();
@@ -488,15 +511,16 @@ export class SearchBar {
             <div
                 style={{
                     position: "relative",
-                    flex: 1,
-                    minWidth: "10em",
-                    maxWidth: "10em",
+                    flex: this.getApp().isDesktop() ? 1 : "",
+                    minWidth: this.getApp().isDesktop() ? "10em" : "25em",
+                    maxWidth: this.getApp().isDesktop() ? "10em" : "25em",
                     marginRight: 5,
+                    fontSize: 16,
                     // paddingLeft: 15,
                 }}
             >
                 <div style={{
-                    height: 40,
+                    height: this.getApp().isDesktop() ? 40 : hiDpiInputBoxBorderHeight,
                     border: "1px solid black",
                     borderRadius: 20,
                     width: "100%",
@@ -511,7 +535,7 @@ export class SearchBar {
                     alignItems: "center",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
-                    fontSize: 16,
+                    fontSize: this.getApp().isDesktop() ? "100%" : hiDpiFontSizeScale,
                     paddingRight: 3,
                     color: isStartTime ? this.getSearchQuery().timeRange[0] === 0 ? "rgba(150, 150, 150, 1)" : "" : this.getSearchQuery().timeRange[1] === farFuture ? "rgba(150, 150, 150, 1)" : "",
                 }}
@@ -595,6 +619,143 @@ export class SearchBar {
         );
     }
 
+    /**
+     * Add new log, logout, and show search screen
+     * 
+     * the search screen is on different level
+     */
+    _ElementOnMobile = () => {
+        const [, forceUpdate] = React.useState({});
+        this.forceUpdate = forceUpdate;
+        return (
+            <div style={{
+                display: "inline-flex",
+                flexDirection: "column",
+                fontFamily: "Inter, sans-serif",
+                alignItems: "flex-start",
+                marginLeft: 15,
+                width: "80%",
+                fontSize: this.getApp().isDesktop() ? "100%" : hiDpiFontSizeScale,
+            }}>
+                <div style={{
+                    display: "inline-flex",
+                    flexDirection: "row",
+                    fontFamily: "Inter, sans-serif",
+                    alignItems: "center",
+                    marginLeft: 15,
+                    flexWrap: "wrap",
+                }}>
+
+                    <this._ElementShowSearchScreenButton></this._ElementShowSearchScreenButton>
+                    {this.getApp().getElementAddThreadButton()}
+                    {this.getApp().getElementLogoutButton()}
+                </div>
+
+            </div>
+        )
+    }
+
+    getElementSearchScreen = () => {
+        return (<this._ElementSearchScreen></this._ElementSearchScreen>)
+    }
+
+
+    _ElementShowSearchScreenButton = () => {
+
+        const elementRef = React.useRef<any>(null);
+        const navigate = useNavigate();
+        return (
+            <div
+                ref={elementRef}
+                onClick={async () => {
+                    // this.setShowSearchScreen(true);
+                    navigate("/searchScreen")
+                }}
+                style={{
+                    display: "inline-flex",
+                    padding: 5,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                    backgroundColor: "rgba(235, 235, 235, 1)",
+                    cursor: "pointer",
+                    // marginRight: 200,
+                    // marginLeft: 30,
+                    marginRight: 10,
+                    // height: 40,
+                    borderRadius: 5,
+                    transition: "all 0.2s ease",
+                    whiteSpace: "nowrap",
+                    justifyContent: "center",
+                    alignItems: "center",
+
+                }}
+            >
+                {"Search"}
+            </div>
+        )
+    }
+
+    _ElementSearchScreen = () => {
+        const [show, setShow] = React.useState(false);
+        this.setShowSearchScreen = setShow;
+        return (
+            <div style={{
+                // display: show ? "inline-flex" : "none",
+                display: "inline-flex",
+                flexDirection: "column",
+                fontFamily: "Inter, sans-serif",
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+                flexWrap: "nowrap",
+                fontSize: this.getApp().isDesktop() ? "100%" : hiDpiFontSizeScale,
+                position: "absolute",
+                left: 0,
+                top: 0,
+                // visibility: show ? "visible" : "none",
+                // width: this.getApp().isDesktop() ? 0 : show? "100%" : 0,
+                // height: this.getApp().isDesktop() ? 0 : show?  "100%": 0,
+                width: "100%",
+                height: "100%",
+                backgroundColor: "white",
+                // overflow: "invisible",
+                zIndex: 10001,
+                paddingLeft: "15%",
+                paddingTop: "15%",
+            }}>
+                <this._ElementTime isStartTime={true}></this._ElementTime>
+                <div style={{ height: "5%" }}></div>
+                <this._ElementTime isStartTime={false}></this._ElementTime>
+                <div style={{ height: "5%" }}></div>
+
+                <this._ElementAuthor></this._ElementAuthor>
+                <div style={{ height: "5%" }}></div>
+                <this._ElementTopic></this._ElementTopic>
+                <div style={{ height: "5%" }}></div>
+                <div style={{
+                    display: "inline-flex",
+                    flexDirection: "row",
+                    height: this.getApp().isDesktop() ? 40 : hiDpiInputBoxBorderHeight,
+                    borderRadius: 20,
+                    border: "solid 1px rgba(0,0,0,1)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    paddingLeft: this.getApp().isDesktop() ? 15 : 0,
+                    paddingRight: 3,
+                    marginLeft: 0,
+                    marginRight: 15,
+                    flex: "grow",
+                    boxSizing: 'border-box',
+                }}>
+                    <this._ElementKeywords></this._ElementKeywords>
+                    <this._ElementSearchButton></this._ElementSearchButton>
+                </div>
+            </div>
+        )
+    }
+
+
+
+
     _Element = () => {
         const [, forceUpdate] = React.useState({});
         this.forceUpdate = forceUpdate;
@@ -628,25 +789,25 @@ export class SearchBar {
                         <this._ElementAuthor></this._ElementAuthor>
                         <this._ElementTopic></this._ElementTopic>
                     </div>
-                        <div style={{
-                            display: "inline-flex",
-                            flexDirection: "row",
-                            height: 40,
-                            // backgroundColor: "rgba(255,255,0,1)",
-                            borderRadius: 20,
-                            border: "solid 1px rgba(0,0,0,1)",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            paddingLeft: 15,
-                            paddingRight: 3,
-                            marginLeft: 0,
-                            marginRight: 15,
-                            flex: "grow",
-                            boxSizing: 'border-box',
-                        }}>
-                            <this._ElementKeywords></this._ElementKeywords>
-                            <this._ElementSearchButton></this._ElementSearchButton>
-                        </div>
+                    <div style={{
+                        display: "inline-flex",
+                        flexDirection: "row",
+                        height: 40,
+                        // backgroundColor: "rgba(255,255,0,1)",
+                        borderRadius: 20,
+                        border: "solid 1px rgba(0,0,0,1)",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        paddingLeft: 15,
+                        paddingRight: 3,
+                        marginLeft: 0,
+                        marginRight: 15,
+                        flex: "grow",
+                        boxSizing: 'border-box',
+                    }}>
+                        <this._ElementKeywords></this._ElementKeywords>
+                        <this._ElementSearchButton></this._ElementSearchButton>
+                    </div>
                 </div>
                 {/* <div style={{
                     width: "100%",
@@ -660,8 +821,15 @@ export class SearchBar {
         )
     }
 
+
+
     getElement = () => {
-        return <this._Element></this._Element>
+        if (this.getApp().isDesktop()) {
+            return <this._Element></this._Element>
+        } else {
+            return <this._ElementOnMobile></this._ElementOnMobile>
+        }
+
     }
 
 

@@ -65,3 +65,6 @@ export const convertTime = (msSinceEpoch: number) => {
 }
 
 export const farFuture = 3751917376000;
+
+export const hiDpiFontSizeScale = "250%";
+export const hiDpiInputBoxBorderHeight = 120;

@@ -20,7 +20,7 @@ import {
 import { nanoid } from 'nanoid';
 import { Thread } from './Thread';
 import { v4 as uuidv4 } from "uuid";
-import { doSearch, convertSearchQueryToUrl, getTimeStr, farFuture } from './Shared';
+import { doSearch, convertSearchQueryToUrl, getTimeStr, farFuture, hiDpiFontSizeScale } from './Shared';
 
 
 export type type_search_query = {
@@ -71,7 +71,7 @@ export class App {
     _searchBar: SearchBar;
     _threadsMatchCount: number = 0;
     _userName: string = "";
-    _setLogoutButtonText = (input: any) => {};
+    _setLogoutButtonText = (input: any) => { };
 
     constructor() {
         this._searchBar = new SearchBar(this);
@@ -92,6 +92,7 @@ export class App {
                 .then((data) => {
                     this.setUserName(data["displayName"]);
                     this._setLogoutButtonText(data["displayName"]);
+                    this.getSearchBar()._setLogoutButtonText(data["displayName"]);
                 })
         }, []);
 
@@ -113,6 +114,10 @@ export class App {
                         path: 'thread',
                         element: <this._ElementThreadWrapper />,
                     },
+                    {
+                        path: 'searchScreen',
+                        element: this.getSearchBar().getElementSearchScreen(),
+                    }
                 ],
             },
         ]);
@@ -283,20 +288,20 @@ export class App {
                 }}
                 style={{
                     display: "inline-flex",
-                    // padding: 5,
+                    padding: this.isDesktop()? "auto": 5,
                     paddingLeft: 10,
                     paddingRight: 10,
                     backgroundColor: "rgba(235, 235, 235, 1)",
                     cursor: "pointer",
                     // marginRight: 200,
-                    marginLeft: 30,
-                    height: 40,
+                    marginLeft: 10,
+                    height: this.isDesktop()? 40: "auto",
                     borderRadius: 5,
                     transition: "all 0.2s ease",
                     whiteSpace: "nowrap",
                     justifyContent: "center",
                     alignItems: "center",
-                    
+
                 }}
                 onMouseEnter={() => {
                     if (elementRef.current !== null) {
@@ -314,7 +319,7 @@ export class App {
                     }
                 }}
             >
-                {text}
+                {this.isDesktop()? text : "LOGOUT"}
             </div>
         )
     }
@@ -336,14 +341,14 @@ export class App {
                 }}
                 style={{
                     display: "inline-flex",
-                    // padding: 5,
+                    padding: this.isDesktop()? "auto" : 5,
                     paddingLeft: 10,
                     paddingRight: 10,
                     backgroundColor: "rgba(235, 235, 235, 1)",
                     cursor: "pointer",
                     // marginRight: 200,
-                    marginLeft: 30,
-                    height: 40,
+                    // marginLeft: 30,
+                    height: this.isDesktop()? 40 : "auto",
                     borderRadius: 5,
                     transition: "background-color 0.2s ease",
                     whiteSpace: "nowrap",
@@ -376,10 +381,15 @@ export class App {
             <tr style={{
                 backgroundColor: index % 2 === 1 ? "rgba(255,255,255,1)" : "rgba(235, 235, 235, 1)",
             }}>
-                {/* <this._ElementThreadThumbnailTopics threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTopics> */}
                 <this._ElementThreadThumbnailTitle threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTitle>
-                <this._ElementThreadThumbnailAuthor threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailAuthor>
-                <this._ElementThreadThumbnailTime threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTime>
+                {this.isDesktop() === true ?
+                    <>
+                        <this._ElementThreadThumbnailAuthor threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailAuthor>
+                        <this._ElementThreadThumbnailTime threadId={threadId} threadData={threadData} index={index}></this._ElementThreadThumbnailTime>
+                    </>
+                    :
+                    null
+                }
             </tr>
         )
     }
@@ -409,6 +419,10 @@ export class App {
                     style={{
                         cursor: "pointer",
                         display: "inline-flex",
+                        minHeight: this.isDesktop() ? "auto" : 44 + 20,
+                        // fontWeight: "normal",
+                        // fontStyle: "normal",
+                        // fontFamily: "serif",
                     }}
                     onMouseEnter={() => {
                         if (elementRef.current !== null) {
@@ -648,6 +662,8 @@ export class App {
                 paddingRight: 50,
                 backgroundColor: "rgba(0,0,0,0)",
                 width: "90%",
+                marginBottom: 30,
+                fontSize: this.isDesktop() ? "100%" : hiDpiFontSizeScale,
             }}>
                 <this._ElementPageIndices></this._ElementPageIndices>
                 <table style={{
@@ -681,7 +697,7 @@ export class App {
         return (
             <div style={{
                 display: "inline-flex",
-                flexDirection: "row",
+                flexDirection: this.isDesktop() ? "row" : "column",
                 marginBottom: 20,
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -692,22 +708,33 @@ export class App {
                     flexDirection: "row",
                     marginBottom: 20,
                     alignItems: "center",
+                    justifyContent: this.isDesktop()? "flex-start" : "space-between"
                 }}>
                     {pageList.map((pageStartingCount: number) => {
                         return (
                             <this._ElementPageIndex startingCount={pageStartingCount}></this._ElementPageIndex>
                         )
                     })}
-                    <this._ElementAddThreadButton></this._ElementAddThreadButton>
+                    {this.isDesktop() ?
+                        <this._ElementAddThreadButton></this._ElementAddThreadButton>
+                        :
+                        null
+                    }
                 </div>
-                <div style={{
-                    display: "inline-flex",
-                    flexDirection: "row",
-                    marginBottom: 20,
-                    alignItems: "center",
-                }}>
-                    <this._ElementLogoutButton></this._ElementLogoutButton>
-                </div>
+                {this.isDesktop() ?
+                    <div style={{
+                        display: "inline-flex",
+                        flexDirection: "row",
+                        marginBottom: 20,
+                        alignItems: "center",
+                    }}>
+                        <this._ElementLogoutButton></this._ElementLogoutButton>
+                    </div>
+                    :
+                    null
+                }
+
+
             </div>
         )
     }
@@ -719,14 +746,15 @@ export class App {
             <div
                 ref={elementRef}
                 style={{
-                    width: 50,
-                    height: 40,
+                    width: this.isDesktop() ? 50 : 70,
+                    height: this.isDesktop() ? 40 : 60,
                     margin: 5,
                     display: "inline-flex",
                     justifyContent: "center",
                     alignItems: "center",
                     cursor: "pointer",
                     borderRadius: 5,
+                    // padding: this.isDesktop() ? 5 : 25,
                     backgroundColor: this.getSearchBar().getSearchQuery()["startingCount"] === startingCount ? "rgba(235,235,235,1)" : "rgba(235,235,235,0)",
                     border: "solid 1px rgba(100, 100, 100, 1)",
                     transition: "background-color 0.2s ease",
@@ -760,6 +788,8 @@ export class App {
             </div>
         )
     }
+
+
 
     getElement = () => {
         return <this._Element></this._Element>
@@ -795,6 +825,29 @@ export class App {
 
     setUserName = (newName: string) => {
         this._userName = newName;
+    }
+
+    getElementLogoutButton = () => {
+        return (<this._ElementLogoutButton></this._ElementLogoutButton>)
+    }
+
+    getElementAddThreadButton = () => {
+        return <this._ElementAddThreadButton></this._ElementAddThreadButton>
+    }
+
+    isDesktop = () => {
+        // return false;
+        // const isMobile = window.matchMedia("(max-width: 768px)").matches;
+        const userAgent = navigator.userAgent || navigator.vendor;
+        const isMobile = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+        console.log("isMobile", isMobile);
+       if (isMobile) {
+            return false;
+            // return true;
+        } else {
+            return true;
+            // return false;
+        }
     }
 
 }

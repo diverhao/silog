@@ -1,19 +1,26 @@
 @font-face {
   font-family: 'Inter';
-  src: url('/Inter.ttf') format('truetype');
-  font-weight: 400;
+  src: url('/resources/Inter.ttf') format('truetype');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
+
 
 @font-face {
-  font-family: 'Inter';
-  src: url('Inter-Italic.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
+    font-family: 'Inter';
+    src: url('/resources/Inter-Italic.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
 }
 
+
+body {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-style: normal;
+}    
 img {
   resize: both;
   overflow: hidden;

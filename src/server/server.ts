@@ -2,7 +2,7 @@ import { DbData } from "./DbData";
 import { HttpServer } from "./HttpServer";
 import * as fs from "fs";
 
-const dbData = new DbData("/Users/1h7/projects/tlog/src/server/test/test01.json");
+const dbData = new DbData("/Users/haohao/tlog/src/server/test/test01.json");
 const httpServer = new HttpServer(4000, dbData);
 
 // set LDAP
@@ -19,8 +19,8 @@ httpServer.setLdapOptions({
 });
 
 // set https
-const keyFile = "/Users/1h7/projects2/javascript/test89-https-express/server.key";
-const certFile = "/Users/1h7/projects2/javascript/test89-https-express/server.cert";
+const keyFile = "/Users/haohao/tlog/server.key";
+const certFile = "/Users/haohao/tlog/server.cert";
 const httpsOptions = {
     key: fs.readFileSync(keyFile),
     cert: fs.readFileSync(certFile),

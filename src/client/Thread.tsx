@@ -25,7 +25,7 @@ import { TableCell, TableKit } from '@tiptap/extension-table'
 // import Figure from '@tiptap/extension-figure';
 import Image from '@tiptap/extension-image';
 import { ImageResize } from './ImageResize';
-import { convertSearchQueryToUrl, getTimeStr } from './Shared';
+import { convertSearchQueryToUrl, getTimeStr, hiDpiFontSizeScale } from './Shared';
 // import { useBlocker } from 'react-router-dom';
 
 const CustomImage = Image.extend({
@@ -52,297 +52,6 @@ const CustomImage = Image.extend({
     },
 });
 
-const _ElementEditorButton = ({ children, disabled, className, onClick }: any) => {
-    const elementRef = React.useRef<any>(null);
-    return <button
-        ref={elementRef}
-        style={{
-            marginRight: 5,
-            border: "solid 1px rgba(200, 200, 200, 1)",
-            borderRadius: 2,
-            transition: "background-color 0.2s ease",
-            backgroundColor: "rgba(235, 235, 235, 1)",
-        }}
-        onClick={onClick}
-        onMouseEnter={() => {
-            if (elementRef.current !== null) {
-                elementRef.current.style["backgroundColor"] = "rgba(215, 215, 215, 1)";
-            }
-        }}
-        onMouseLeave={() => {
-            if (elementRef.current !== null) {
-                elementRef.current.style["backgroundColor"] = "rgba(235, 235, 235, 1)";
-            }
-        }}
-        disabled={disabled}
-        className={className}
-    >
-        {children}
-    </button>
-}
-
-const MenuBar = ({ editor }: any) => {
-    // const { editor } = useCurrentEditor()
-
-    if (!editor) {
-        return null
-    }
-
-    return (
-        <div className="control-group">
-            <div style={{
-                marginBottom: 5,
-            }}>
-
-                <_ElementEditorButton
-                    onClick={() => {
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.accept = 'image/*'; // Only allow image files
-                        input.onchange = () => {
-                            const file = input.files?.[0];
-                            if (!file) return;
-
-                            const reader = new FileReader();
-
-                            reader.onload = () => {
-                                const src = reader.result as string;
-                                editor
-                                    .chain()
-                                    .focus()
-                                    .insertContent({
-                                        type: 'image',
-                                        attrs: {
-                                            src: src,
-                                            style: 'width: 300px; height: auto;',
-                                        },
-                                    })
-                                    .run();
-
-                                // You can now use the base64 string (e.g., insert it into <img>, send to server, etc.)
-                            };
-
-                            reader.readAsDataURL(file); // Read file as Base64
-                        };
-                        input.click();
-
-                    }}
-                >
-                    Insert Figure
-                </_ElementEditorButton>
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleBold().run()}
-                    disabled={
-                        !editor.can()
-                            .chain()
-                            .focus()
-                            .toggleBold()
-                            .run()
-                    }
-                    className={editor.isActive('bold') ? 'is-active' : ''}
-                >
-                    Bold
-                </_ElementEditorButton>
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleRe().run()}
-                    disabled={
-                        !editor.can()
-                            .chain()
-                            .focus()
-                            .toggleBold()
-                            .run()
-                    }
-                    className={editor.isActive('bold') ? 'is-active' : ''}
-                >
-                    Regular
-                </_ElementEditorButton>
-
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleItalic().run()}
-                    disabled={
-                        !editor.can()
-                            .chain()
-                            .focus()
-                            .toggleItalic()
-                            .run()
-                    }
-                    className={editor.isActive('italic') ? 'is-active' : ''}
-                >
-                    Italic
-                </_ElementEditorButton>
-
-                {/* <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleStrike().run()}
-                    disabled={
-                        !editor.can()
-                            .chain()
-                            .focus()
-                            .toggleStrike()
-                            .run()
-                    }
-                    className={editor.isActive('strike') ? 'is-active' : ''}
-                >
-                    Strike
-                </_ElementEditorButton> */}
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleCode().run()}
-                    disabled={
-                        !editor.can()
-                            .chain()
-                            .focus()
-                            .toggleCode()
-                            .run()
-                    }
-                    className={editor.isActive('code') ? 'is-active' : ''}
-                >
-                    Code
-                </_ElementEditorButton>
-
-
-                {/* <_ElementEditorButton onClick={() => editor.chain().focus().unsetAllMarks().run()}>
-                    Clear marks
-                </_ElementEditorButton>
-                <_ElementEditorButton onClick={() => editor.chain().focus().clearNodes().run()}>
-                    Clear nodes
-                </_ElementEditorButton> */}
-                {/* <_ElementEditorButton
-                    onClick={() => editor.chain().focus().setParagraph().run()}
-                    className={editor.isActive('paragraph') ? 'is-active' : ''}
-                >
-                    Paragraph
-                </_ElementEditorButton> */}
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                    className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
-                >
-                    Large font
-                </_ElementEditorButton>
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                    className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
-                >
-                    Medium font
-                </_ElementEditorButton>
-                {/* <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                    className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
-                >
-                    H3
-                </_ElementEditorButton>
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
-                    className={editor.isActive('heading', { level: 4 }) ? 'is-active' : ''}
-                >
-                    H4
-                </_ElementEditorButton>
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
-                    className={editor.isActive('heading', { level: 5 }) ? 'is-active' : ''}
-                >
-                    H5
-                </_ElementEditorButton>
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
-                    className={editor.isActive('heading', { level: 6 }) ? 'is-active' : ''}
-                >
-                    H6
-                </_ElementEditorButton> */}
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleBulletList().run()}
-                    className={editor.isActive('bulletList') ? 'is-active' : ''}
-                >
-                    Bullet list
-                </_ElementEditorButton>
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                    className={editor.isActive('orderedList') ? 'is-active' : ''}
-                >
-                    Ordered list
-                </_ElementEditorButton>
-                {/* <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                    className={editor.isActive('codeBlock') ? 'is-active' : ''}
-                >
-                    Code block
-                </_ElementEditorButton> */}
-                {/* <_ElementEditorButton
-                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                    className={editor.isActive('blockquote') ? 'is-active' : ''}
-                >
-                    Blockquote
-                </_ElementEditorButton> */}
-                {/* <_ElementEditorButton onClick={() => editor.chain().focus().setHorizontalRule().run()}>
-                    Horizontal rule
-                </_ElementEditorButton> */}
-                {/* <_ElementEditorButton onClick={() => editor.chain().focus().setHardBreak().run()}>
-                    Hard break
-                </_ElementEditorButton> */}
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().undo().run()}
-                    disabled={
-                        !editor.can()
-                            .chain()
-                            .focus()
-                            .undo()
-                            .run()
-                    }
-                >
-                    Undo
-                </_ElementEditorButton>
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().redo().run()}
-                    disabled={
-                        !editor.can()
-                            .chain()
-                            .focus()
-                            .redo()
-                            .run()
-                    }
-                >
-                    Redo
-                </_ElementEditorButton>
-                {/* <_ElementEditorButton
-                    onClick={() => editor.chain().focus().setColor('#958DF1').run()}
-                    className={editor.isActive('textStyle', { color: '#958DF1' }) ? 'is-active' : ''}
-                >
-                    Purple
-                </_ElementEditorButton> */}
-
-                {/* Table */}
-            </div>
-            <div className='button-group'>
-                <_ElementEditorButton onClick={() => {
-                    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-                }}>
-                    Insert table
-                </_ElementEditorButton>
-
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().addColumnBefore().run()}
-                    disabled={!editor.can().addColumnBefore()}
-                >
-                    Add column before
-                </_ElementEditorButton>
-                <_ElementEditorButton
-                    onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>
-                    Add column after
-                </_ElementEditorButton>
-                <_ElementEditorButton onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()}>
-                    Delete column
-                </_ElementEditorButton>
-                <_ElementEditorButton onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>
-                    Add row before
-                </_ElementEditorButton>
-                <_ElementEditorButton onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>
-                    Add row after
-                </_ElementEditorButton>
-                <_ElementEditorButton onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()}>
-                    Delete row
-                </_ElementEditorButton>
-            </div>
-        </div >
-    )
-}
 
 
 
@@ -418,7 +127,7 @@ export class Thread {
                     paddingRight: 50,
                     // backgroundColor: "green",
                     width: "90%",
-
+                    fontSize: this.getApp().isDesktop() ? "100%" : hiDpiFontSizeScale,
                 }}>
                     <this._ElementNewPost />
                 </div>
@@ -431,6 +140,7 @@ export class Thread {
                 paddingRight: 50,
                 // backgroundColor: "green",
                 width: "90%",
+                fontSize: this.getApp().isDesktop() ? "100%" : hiDpiFontSizeScale,
 
             }}>
 
@@ -457,7 +167,8 @@ export class Thread {
         }
 
         return (
-            <div>
+            <div style={{
+            }}>
                 <this._ElementPostTitle postData={postData} index={index}></this._ElementPostTitle>
                 <this._ElementPostTopics postData={postData} index={index}></this._ElementPostTopics>
                 <this._ElementPostAuthorTime postData={postData} index={index}></this._ElementPostAuthorTime>
@@ -477,8 +188,14 @@ export class Thread {
                 <div style={{
                     fontSize: 28,
                     marginBottom: 15,
+
                 }}>
-                    {title}
+                    <div style={{
+                        fontSize: this.getApp().isDesktop() ? "100%" : hiDpiFontSizeScale,
+
+                    }}>
+                        {title}
+                    </div>
                 </div>
             )
         }
@@ -567,7 +284,7 @@ export class Thread {
                     paddingLeft: 10,
                     paddingRight: 10,
                     backgroundColor: selected ? "rgba(235, 235, 235, 1)" : "rgba(235, 235, 235, 1)",
-                    color: selected ? "rgba(0,0,0, 1)": "rgba(173, 173, 173, 1)",
+                    color: selected ? "rgba(0,0,0, 1)" : "rgba(173, 173, 173, 1)",
                     cursor: "pointer",
                     marginRight: 10,
                     borderRadius: 5,
@@ -644,7 +361,11 @@ export class Thread {
     _ElementPostText = ({ postData, index }: { postData: type_post, index: number }) => {
         const text = postData["text"];
         return (
-            <div dangerouslySetInnerHTML={{ __html: text }} />
+            <div
+                style={{
+
+                }}
+                dangerouslySetInnerHTML={{ __html: text }} />
         )
     }
 
@@ -844,7 +565,7 @@ export class Thread {
                 onSubmit={(event: any) => { event.preventDefault() }}>
                 <input
                     style={{
-                        fontSize: 28,
+                        fontSize: this.getApp().isDesktop() ? 28 : 28 * 3,
                         outline: "none",
                         padding: 15,
                         paddingTop: 8,
@@ -896,53 +617,23 @@ export class Thread {
         if (!editor) {
             return <p>Loading editor...</p>;
         }
-        this._editor = editor;
 
         useEffect(() => {
             if (!editor) return;
-            // drop down image
-            const handleDrop = (event: DragEvent) => {
-                event.preventDefault();
 
-                const files = event.dataTransfer?.files;
-                if (!files || files.length === 0) return;
+            const interval = setInterval(() => {
+                const dom = editor.view?.dom;
+                if (dom) {
+                    const handleDrop = (event: DragEvent) => {
+                        event.preventDefault();
 
-                const file = files[0];
-                if (!file.type.startsWith('image/')) return;
+                        const files = event.dataTransfer?.files;
+                        if (!files || files.length === 0) return;
 
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const src = reader.result as string;
-
-                    editor
-                        .chain()
-                        .focus()
-                        .insertContent({
-                            type: 'image',
-                            attrs: {
-                                src: src,
-                                style: 'width: 300px; height: auto;',
-                            },
-                        })
-                        .run();
-                };
-                reader.readAsDataURL(file);
-            };
-
-            // paste image
-            const handlePaste = (event: ClipboardEvent) => {
-                const items = event.clipboardData?.items;
-                if (!items) return;
-
-                for (const item of items) {
-                    if (item.type.startsWith('image/')) {
-                        event.preventDefault(); // prevent default paste behavior
-
-                        const file = item.getAsFile();
-                        if (!file) return;
+                        const file = files[0];
+                        if (!file.type.startsWith('image/')) return;
 
                         const reader = new FileReader();
-
                         reader.onload = () => {
                             const src = reader.result as string;
 
@@ -958,21 +649,61 @@ export class Thread {
                                 })
                                 .run();
                         };
-
                         reader.readAsDataURL(file);
-                        break; // stop after first image
-                    }
+                    };
+
+                    // paste image
+                    const handlePaste = (event: ClipboardEvent) => {
+                        const items = event.clipboardData?.items;
+                        if (!items) return;
+
+                        for (const item of items) {
+                            if (item.type.startsWith('image/')) {
+                                event.preventDefault(); // prevent default paste behavior
+
+                                const file = item.getAsFile();
+                                if (!file) return;
+
+                                const reader = new FileReader();
+
+                                reader.onload = () => {
+                                    const src = reader.result as string;
+
+                                    editor
+                                        .chain()
+                                        .focus()
+                                        .insertContent({
+                                            type: 'image',
+                                            attrs: {
+                                                src: src,
+                                                style: 'width: 300px; height: auto;',
+                                            },
+                                        })
+                                        .run();
+                                };
+
+                                reader.readAsDataURL(file);
+                                break; // stop after first image
+                            }
+                        }
+                    };
+
+                    this._editor = editor;
+                    const dom = editor.view.dom;
+                    dom.addEventListener('drop', handleDrop);
+                    dom.addEventListener('paste', handlePaste);
+                    clearInterval(interval);
+
+                    return () => {
+                        dom.removeEventListener('paste', handlePaste);
+                        dom.removeEventListener('drop', handleDrop);
+                    };
+
                 }
-            };
 
-            const dom = editor.view.dom;
-            dom.addEventListener('drop', handleDrop);
-            dom.addEventListener('paste', handlePaste);
+            }, 1000)
 
-            return () => {
-                dom.removeEventListener('paste', handlePaste);
-                dom.removeEventListener('drop', handleDrop);
-            };
+
         }, [editor]);
 
         if (this.getState() === "adding-post" || this.getState() === "adding-thread") {
@@ -984,7 +715,7 @@ export class Thread {
                     {this.getState() === "adding-thread" ? <this._ElementNewThreadTitle title={title} setTitle={setTitle}></this._ElementNewThreadTitle> : null}
                     {this.getState() === "adding-thread" ? <this._ElementNewPostTopics topics={topics} setTopics={setTopics}></this._ElementNewPostTopics> : null}
 
-                    <MenuBar editor={editor}></MenuBar>
+                    <this.MenuBar editor={editor}></this.MenuBar>
 
                     <EditorContent editor={editor} className="my-editor" />
                     <div style={{
@@ -1011,6 +742,309 @@ export class Thread {
 
 
 
+    _ElementEditorButton = ({ children, disabled, className, onClick }: any) => {
+        const elementRef = React.useRef<any>(null);
+        return <button
+            ref={elementRef}
+            style={{
+                marginRight: 5,
+                border: "solid 1px rgba(200, 200, 200, 1)",
+                borderRadius: 2,
+                transition: "background-color 0.2s ease",
+                backgroundColor: "rgba(235, 235, 235, 1)",
+                fontSize: this.getApp().isDesktop() ? "100%" : "100%"
+            }}
+            onClick={onClick}
+            onMouseEnter={() => {
+                if (elementRef.current !== null) {
+                    elementRef.current.style["backgroundColor"] = "rgba(215, 215, 215, 1)";
+                }
+            }}
+            onMouseLeave={() => {
+                if (elementRef.current !== null) {
+                    elementRef.current.style["backgroundColor"] = "rgba(235, 235, 235, 1)";
+                }
+            }}
+            disabled={disabled}
+            className={className}
+        >
+            {children}
+        </button>
+    }
+
+    MenuBar = ({ editor }: any) => {
+        // const { editor } = useCurrentEditor()
+
+        if (!editor) {
+            return null
+        }
+
+        return (
+            <div className="control-group">
+                <div style={{
+                    marginBottom: 5,
+                }}>
+
+                    <this._ElementEditorButton
+                        onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*'; // Only allow image files
+                            input.onchange = () => {
+                                const file = input.files?.[0];
+                                if (!file) return;
+
+                                const reader = new FileReader();
+
+                                reader.onload = () => {
+                                    const src = reader.result as string;
+                                    editor
+                                        .chain()
+                                        .focus()
+                                        .insertContent({
+                                            type: 'image',
+                                            attrs: {
+                                                src: src,
+                                                style: 'width: 300px; height: auto;',
+                                            },
+                                        })
+                                        .run();
+
+                                    // You can now use the base64 string (e.g., insert it into <img>, send to server, etc.)
+                                };
+
+                                reader.readAsDataURL(file); // Read file as Base64
+                            };
+                            input.click();
+
+                        }}
+                    >
+                        Insert Figure
+                    </this._ElementEditorButton>
+                    {this.getApp().isDesktop() ?
+                        <>
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().toggleBold().run()}
+                                disabled={
+                                    !editor.can()
+                                        .chain()
+                                        .focus()
+                                        .toggleBold()
+                                        .run()
+                                }
+                                className={editor.isActive('bold') ? 'is-active' : ''}
+                            >
+                                Bold
+                            </this._ElementEditorButton>
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().toggleRe().run()}
+                                disabled={
+                                    !editor.can()
+                                        .chain()
+                                        .focus()
+                                        .toggleBold()
+                                        .run()
+                                }
+                                className={editor.isActive('bold') ? 'is-active' : ''}
+                            >
+                                Regular
+                            </this._ElementEditorButton>
+
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().toggleItalic().run()}
+                                disabled={
+                                    !editor.can()
+                                        .chain()
+                                        .focus()
+                                        .toggleItalic()
+                                        .run()
+                                }
+                                className={editor.isActive('italic') ? 'is-active' : ''}
+                            >
+                                Italic
+                            </this._ElementEditorButton>
+
+                            {/* <this._ElementEditorButton
+                        onClick={() => editor.chain().focus().toggleStrike().run()}
+                        disabled={
+                            !editor.can()
+                                .chain()
+                                .focus()
+                                .toggleStrike()
+                                .run()
+                        }
+                        className={editor.isActive('strike') ? 'is-active' : ''}
+                    >
+                        Strike
+                    </this._ElementEditorButton> */}
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().toggleCode().run()}
+                                disabled={
+                                    !editor.can()
+                                        .chain()
+                                        .focus()
+                                        .toggleCode()
+                                        .run()
+                                }
+                                className={editor.isActive('code') ? 'is-active' : ''}
+                            >
+                                Code
+                            </this._ElementEditorButton>
+
+
+                            {/* <this._ElementEditorButton onClick={() => editor.chain().focus().unsetAllMarks().run()}>
+                        Clear marks
+                    </this._ElementEditorButton>
+                    <this._ElementEditorButton onClick={() => editor.chain().focus().clearNodes().run()}>
+                        Clear nodes
+                    </this._ElementEditorButton> */}
+                            {/* <this._ElementEditorButton
+                        onClick={() => editor.chain().focus().setParagraph().run()}
+                        className={editor.isActive('paragraph') ? 'is-active' : ''}
+                    >
+                        Paragraph
+                    </this._ElementEditorButton> */}
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                                className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+                            >
+                                Large font
+                            </this._ElementEditorButton>
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                                className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
+                            >
+                                Medium font
+                            </this._ElementEditorButton>
+                            {/* <this._ElementEditorButton
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                        className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
+                    >
+                        H3
+                    </this._ElementEditorButton>
+                    <this._ElementEditorButton
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+                        className={editor.isActive('heading', { level: 4 }) ? 'is-active' : ''}
+                    >
+                        H4
+                    </this._ElementEditorButton>
+                    <this._ElementEditorButton
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
+                        className={editor.isActive('heading', { level: 5 }) ? 'is-active' : ''}
+                    >
+                        H5
+                    </this._ElementEditorButton>
+                    <this._ElementEditorButton
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
+                        className={editor.isActive('heading', { level: 6 }) ? 'is-active' : ''}
+                    >
+                        H6
+                    </this._ElementEditorButton> */}
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                                className={editor.isActive('bulletList') ? 'is-active' : ''}
+                            >
+                                Bullet list
+                            </this._ElementEditorButton>
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                                className={editor.isActive('orderedList') ? 'is-active' : ''}
+                            >
+                                Ordered list
+                            </this._ElementEditorButton>
+                            {/* <this._ElementEditorButton
+                        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                        className={editor.isActive('codeBlock') ? 'is-active' : ''}
+                    >
+                        Code block
+                    </this._ElementEditorButton> */}
+                            {/* <this._ElementEditorButton
+                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                        className={editor.isActive('blockquote') ? 'is-active' : ''}
+                    >
+                        Blockquote
+                    </this._ElementEditorButton> */}
+                            {/* <this._ElementEditorButton onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+                        Horizontal rule
+                    </this._ElementEditorButton> */}
+                            {/* <this._ElementEditorButton onClick={() => editor.chain().focus().setHardBreak().run()}>
+                        Hard break
+                    </this._ElementEditorButton> */}
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().undo().run()}
+                                disabled={
+                                    !editor.can()
+                                        .chain()
+                                        .focus()
+                                        .undo()
+                                        .run()
+                                }
+                            >
+                                Undo
+                            </this._ElementEditorButton>
+                            <this._ElementEditorButton
+                                onClick={() => editor.chain().focus().redo().run()}
+                                disabled={
+                                    !editor.can()
+                                        .chain()
+                                        .focus()
+                                        .redo()
+                                        .run()
+                                }
+                            >
+                                Redo
+                            </this._ElementEditorButton>
+                            {/* <this._ElementEditorButton
+                        onClick={() => editor.chain().focus().setColor('#958DF1').run()}
+                        className={editor.isActive('textStyle', { color: '#958DF1' }) ? 'is-active' : ''}
+                    >
+                        Purple
+                    </this._ElementEditorButton> */}
+
+                            {/* Table */}
+                        </>
+                        :
+                        null
+                    }
+                </div>
+                {this.getApp().isDesktop() ?
+
+                    <div className='button-group'>
+                        <this._ElementEditorButton onClick={() => {
+                            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+                        }}>
+                            Insert table
+                        </this._ElementEditorButton>
+
+                        <this._ElementEditorButton
+                            onClick={() => editor.chain().focus().addColumnBefore().run()}
+                            disabled={!editor.can().addColumnBefore()}
+                        >
+                            Add column before
+                        </this._ElementEditorButton>
+                        <this._ElementEditorButton
+                            onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>
+                            Add column after
+                        </this._ElementEditorButton>
+                        <this._ElementEditorButton onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()}>
+                            Delete column
+                        </this._ElementEditorButton>
+                        <this._ElementEditorButton onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>
+                            Add row before
+                        </this._ElementEditorButton>
+                        <this._ElementEditorButton onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>
+                            Add row after
+                        </this._ElementEditorButton>
+                        <this._ElementEditorButton onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()}>
+                            Delete row
+                        </this._ElementEditorButton>
+                    </div>
+                    :
+                    null
+                }
+            </div >
+        )
+    }
 
     extractBase64Images = (html: string) => {
         const imgRegex = /<img[^>]+src="(data:image\/[^"]+)"[^>]*>/g;
