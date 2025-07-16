@@ -5,7 +5,7 @@
   padding: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   font-style: bold;
-  width: 70%; /* default is ~350px */
+  width: 90%; /* default is ~350px */
   max-width: 100%;
   font-size: 50px; /* increases font size of all elements */
   padding: 20px;
@@ -46,22 +46,22 @@
   font-weight: bold;
 }
 .react-calendar__navigation__label {
-  font-size: 50px;
+  font-size: 40px;
   font-weight: bold;
 }
 .react-calendar__navigation button {
-  font-size: 60px;
+  font-size: 40px;
 }
 
 /* Weekday labels */
 .react-calendar__month-view__weekdays abbr {
-  font-size: 50px;
+  font-size: 35px;
   border-bottom: none !important;
   text-decoration: none;
 
 }
 .react-calendar__month-view__weekdays__weekday {
-  font-size: 50px;
+  font-size: 35px;
   border-bottom: none !important;
   text-decoration: none;
 

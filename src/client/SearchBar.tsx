@@ -361,12 +361,13 @@ export class SearchBar {
                     }}
                     value={this.obtainKeywords()}
                     onChange={(event: any) => {
-                        if (event.target.value.trim() === "") {
+                        console.log("on change...", event.target.value)
+                        if (event.target.value === "") {
                             this.getSearchQuery()["keywords"] = [];
                         } else {
-                            this.getSearchQuery()["keywords"] = event.target.value.trim().split(" ");
+                            this.getSearchQuery()["keywords"] = event.target.value.split(" ");
                         }
-                        this.forceUpdate({});
+                        forceUpdate({});
                     }}
                     placeholder="Any title or text"
                 >
@@ -857,6 +858,7 @@ export class SearchBar {
     }
 
     obtainKeywords = () => {
+        console.log("obtain keywords", this.getSearchQuery().keywords)
         return this.getSearchQuery().keywords.length === 0 ? "" : this.getSearchQuery().keywords.join(" ");
     }
 }

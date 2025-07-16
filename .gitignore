@@ -1,3 +1,4 @@
 dist
 doc
 node_modules
+src/server/test/test01.json

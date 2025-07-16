@@ -1,0 +1,21 @@
+{
+    "port": 4000,
+    "db": {
+        "file": "/Users/haohao/tlog/src/server/test/test01.json"
+    },
+    "ldap": {
+        "url": "ldap://localhost:3890",
+        "bindDN": "",
+        "bindCredentials": "",
+        "searchBase": "ou=users,dc=example,dc=com",
+        "searchFilter": "(uid={{username}})",
+        "searchScope": "sub",
+        "tlsOptions": {
+            "rejectUnauthorized": false
+        }
+    },
+    "https": {
+        "keyFile": "/Users/haohao/tlog/src/server/test/server.key",
+        "certFile": "/Users/haohao/tlog/src/server/test/server.cert"
+    }
+}
