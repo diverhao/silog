@@ -1,5 +1,5 @@
 {
-    "name": "tlog",
+    "name": "silog",
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
@@ -56,5 +56,12 @@
         "sass-loader": "^16.0.5",
         "style-loader": "^4.0.0",
         "webpack-dev-server": "^5.2.2"
+    },
+    "bin": "dist/server/server.js",
+    "pkg": {
+        "assets": [
+            "dist/webpack/**/*",
+            "dist/server/resources/**/*"
+        ]
     }
 }

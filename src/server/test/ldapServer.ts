@@ -46,7 +46,7 @@ server.search("dc=example,dc=com", (req: any, res: any, next: any) => {
     res.end();
 });
 
-server.listen(3890, () => {
+server.listen(3890, "0.0.0.0", () => {
     console.log("LDAP server running on ldap://localhost:3890");
 });
 
